@@ -37,10 +37,20 @@ test("keeps a single current regulations data source", async () => {
   assert.match(data, /export const regulations(?:\s*:\s*[^=]+)?\s*=/);
   assert.match(data, /status: "active"/);
   assert.match(data, /status: "upcoming"/);
+  assert.match(data, /code: "YY\/T 0466\.2-2015".*status: "active"/);
+  assert.doesNotMatch(data, /^\+\s+item\(/m);
   assert.doesNotMatch(data, /old-regulations|legacy-regulations|旧法规清单/i);
 
   const ids = [...data.matchAll(/id:\s*"([^"]+)"/g)].map((match) => match[1]);
   assert.equal(new Set(ids).size, ids.length, "regulation ids must be unique");
+});
+
+test("makes comparison summary cards filter their detail rows", async () => {
+  const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
+  assert.match(client, /comparisonFilter/);
+  assert.match(client, /const visibleRows = filter === "all"/);
+  assert.match(client, /aria-pressed=\{active\}/);
+  assert.match(client, /onFilter\(filter === "replace" \? "all" : "replace"\)/);
 });
 
 test("keeps package commands independent of unavailable shell wrappers", async () => {
