@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { ArrowLeft, ArrowUpRight, Gamepad2 } from "lucide-react";
+
+const games = [
+  { title: "WJC Game", description: "第一个小游戏入口，打开后在新页面游玩。", href: "https://wjc445479963-beep.github.io/wjc-game/", tone: "from-blue-500/20 to-cyan-400/10" },
+  { title: "WJC App", description: "第二个互动作品入口，后续可以继续补充说明。", href: "https://wjc445479963-beep.github.io/wjc-app/", tone: "from-fuchsia-500/20 to-violet-400/10" },
+];
+
+export default function GamesPage() {
+  return <main className="min-h-screen bg-[#f6f8fb] text-[#10213d]"><header className="border-b border-slate-200 bg-[#10213d] px-6 py-5 text-white"><div className="mx-auto max-w-[1100px]"><Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white"><ArrowLeft className="size-4" />返回 wjc的韭菜花园</Link></div></header><div className="mx-auto max-w-[1100px] px-6 py-12 lg:py-16"><div className="flex items-center gap-4"><div className="flex size-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600"><Gamepad2 className="size-6" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Mini games</p><h1 className="mt-2 text-4xl font-semibold tracking-tight">轻松一下</h1></div></div><p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">把之前做过的小游戏集中放在这里，工作间隙打开就能玩。</p><div className="mt-10 grid gap-5 md:grid-cols-2">{games.map((game) => <a key={game.href} href={game.href} target="_blank" rel="noreferrer" className={`group rounded-2xl border border-slate-200 bg-gradient-to-br ${game.tone} bg-white p-7 transition hover:-translate-y-1 hover:shadow-lg`}><div className="flex items-start justify-between"><div className="flex size-11 items-center justify-center rounded-xl bg-white/80 text-[#18345d]"><Gamepad2 className="size-5" /></div><ArrowUpRight className="size-5 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#d6534e]" /></div><h2 className="mt-8 text-2xl font-semibold text-[#18345d]">{game.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{game.description}</p><span className="mt-7 inline-flex rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600">打开游戏</span></a>)}</div><p className="mt-8 text-xs leading-6 text-slate-400">游戏当前托管在 GitHub Pages，点击后会在新标签页打开。</p></div></main>;
+}
