@@ -60,7 +60,7 @@ test("does not include local secrets or generated artifacts in the source tree",
     ".gitignore",
     "app/regulations-data.ts",
   ];
-  for (const path of tracked) assert.equal(forbidenNames.test(path), false, `${path} must not be generated output`);
+  for (const path of tracked) assert.equal(forbiddenNames.test(path), false, `${path} must not be generated output`);
 
   const ignore = await readFile(join(root, ".gitignore"), "utf8");
   assert.match(ignore, /node_modules/);
