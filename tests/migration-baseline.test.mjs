@@ -61,7 +61,7 @@ test("keeps the public build free of runtime auth and review controls", async ()
   assert.match(client, /addComparisonProvenance\(parsed\.rows, publicRegulations\)/);
   assert.match(client, /const reference = sourceRegulations\.find/);
   assert.doesNotMatch(page, /force-dynamic|getChatGPTUser|signin-with-chatgpt|local_admin/);
-  assert.match(page, /公开静态版/);
+  assert.doesNotMatch(page, /公开静态版/);
 });
 
 test("keeps original fields and provenance in comparison exports", async () => {
@@ -71,6 +71,13 @@ test("keeps original fields and provenance in comparison exports", async () => {
   assert.match(client, /主库最后核对/);
   assert.match(client, /来源依据/);
   assert.match(client, /官方来源链接/);
+});
+
+test("uses the requested secret garden key and music door", async () => {
+  const page = await readFile(join(root, "app/secret-garden/page.tsx"), "utf8");
+  assert.match(page, /normalized === "wjc"/);
+  assert.doesNotMatch(page, /wjc666|"666"/);
+  assert.match(page, /https:\/\/163cn\.tv\/bexp6IId/);
 });
 
 test("keeps the recovered comparison records and public workbook export", async () => {
@@ -109,6 +116,7 @@ test("configures a static GitHub Pages export", async () => {
   assert.match(config, /GITHUB_PAGES/);
   assert.match(workflow, /actions\/deploy-pages@v4/);
   assert.match(workflow, /npm run build/);
+  assert.match(workflow, /path: \.\/dist\/client/);
 });
 
 test("keeps package commands independent of unavailable shell wrappers", async () => {
