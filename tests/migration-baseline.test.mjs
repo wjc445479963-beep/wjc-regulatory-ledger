@@ -53,6 +53,64 @@ test("makes comparison summary cards filter their detail rows", async () => {
   assert.match(client, /onFilter\(filter === "replace" \? "all" : "replace"\)/);
 });
 
+test("keeps the public build free of runtime auth and review controls", async () => {
+  const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
+  const page = await readFile(join(root, "app/regulations/page.tsx"), "utf8");
+  assert.match(client, /item\.status !== "replaced" && item\.status !== "review"/);
+  assert.doesNotMatch(client, /getChatGPTUser|signInHref|ReviewToolbar|管理员导出全库/);
+  assert.match(client, /addComparisonProvenance\(parsed\.rows, publicRegulations\)/);
+  assert.match(client, /const reference = sourceRegulations\.find/);
+  assert.doesNotMatch(page, /force-dynamic|getChatGPTUser|signin-with-chatgpt|local_admin/);
+  assert.match(page, /公开静态版/);
+});
+
+test("keeps original fields and provenance in comparison exports", async () => {
+  const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
+  assert.match(client, /原清单版本号/);
+  assert.match(client, /原清单来源/);
+  assert.match(client, /主库最后核对/);
+  assert.match(client, /来源依据/);
+  assert.match(client, /官方来源链接/);
+});
+
+test("keeps the recovered comparison records and public workbook export", async () => {
+  const data = await readFile(join(root, "app/regulations-data.ts"), "utf8");
+  const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
+  const workbook = await readFile(join(root, "app/excel-utils.ts"), "utf8");
+  assert.equal((data.match(/id: "imported-compare-/g) ?? []).length, 313);
+  assert.equal((data.match(/category: "CFDA法律法规"/g) ?? []).length >= 214, true);
+  assert.match(data, /status: "review", effective: "待核对"/);
+  assert.match(data, /filter\(\(\{ status \}\) => status !== "review"\)/);
+  assert.match(client, /导出公开法规 Excel/);
+  assert.match(client, /downloadRegulationsWorkbook\("法规主库\.xlsx", publicRegulations\)/);
+  assert.match(workbook, /record\.status === "active"/);
+  assert.match(workbook, /record\.status === "upcoming"/);
+  assert.match(workbook, /record\.status === "review"/);
+  for (const sheet of ["现行法规", "即将实施", "待核对", "CFDA法律法规", "YY", "GB", "ISO", "ASTM", "美国医疗器械法规", "欧盟医疗器械法规"]) {
+    assert.match(workbook, new RegExp(sheet));
+  }
+});
+
+test("keeps public status cards limited to published statuses", async () => {
+  const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
+  assert.match(client, /const statusFiltered = useMemo/);
+  assert.match(client, /const categoryCounts = useMemo/);
+  assert.match(client, /categoryCounts\[item\]/);
+  assert.match(client, /onClick=\{\(\) => jumpToStatus\("active"\)\}/);
+  assert.match(client, /onClick=\{\(\) => jumpToStatus\("upcoming"\)\}/);
+  assert.doesNotMatch(client, /jumpToStatus\("review"\)|批量确认现行|批量确认即将实施|生成辅助建议/);
+});
+
+test("configures a static GitHub Pages export", async () => {
+  const config = await readFile(join(root, "next.config.ts"), "utf8");
+  const workflow = await readFile(join(root, ".github/workflows/deploy-pages.yml"), "utf8");
+  assert.match(config, /output: "export"/);
+  assert.match(config, /trailingSlash: true/);
+  assert.match(config, /GITHUB_PAGES/);
+  assert.match(workflow, /actions\/deploy-pages@v4/);
+  assert.match(workflow, /npm run build/);
+});
+
 test("keeps package commands independent of unavailable shell wrappers", async () => {
   const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   assert.match(pkg.scripts.build, /vinext\s+build/);

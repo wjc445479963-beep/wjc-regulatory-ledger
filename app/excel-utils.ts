@@ -186,3 +186,143 @@ export function downloadCsv(filename: string, rows: SpreadsheetRow[]) {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+type RegulationExportRecord = {
+  code: string;
+  title: string;
+  source: string;
+  category: string;
+  status: string;
+  effective: string;
+  updated: string;
+  note: string;
+  href: string;
+};
+
+const exportHeaders = ["编号", "法规名称", "分类", "状态", "生效/关注日期", "来源机构", "最后核对", "说明", "官方来源链接"];
+const exportSheets = ["现行法规", "即将实施", "待核对", "CFDA法律法规", "YY", "GB", "ISO", "ASTM", "美国医疗器械法规", "欧盟医疗器械法规"];
+
+function exportStatusLabel(status: string) {
+  return status === "active" ? "现行" : status === "upcoming" ? "即将实施" : status === "replaced" ? "已被替代" : "待核对";
+}
+
+function exportCategory(record: RegulationExportRecord) {
+  const code = record.code.toUpperCase().replace(/\s+/g, "");
+  if (/^YY\/?T/.test(code)) return "YY";
+  if (/^GB/.test(code)) return "GB";
+  if (/^(ISO|IEC|ENISO)/.test(code)) return "ISO";
+  if (/^ASTM/.test(code)) return "ASTM";
+  if (/^(21CFR|FDA|US)/.test(code) || /美国|FDA/i.test(record.title)) return "美国医疗器械法规";
+  if (/(EU|MDR|IVDR|欧盟)/.test(code) || /欧盟|MDR|IVDR/i.test(record.title)) return "欧盟医疗器械法规";
+  return "CFDA法律法规";
+}
+
+function xmlEscape(value: unknown) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function columnName(index: number) {
+  let value = "";
+  let current = index + 1;
+  while (current > 0) {
+    const remainder = (current - 1) % 26;
+    value = String.fromCharCode(65 + remainder) + value;
+    current = Math.floor((current - 1) / 26);
+  }
+  return value;
+}
+
+function worksheetXml(rows: string[][]) {
+  const data = rows.map((row, rowIndex) => {
+    const cells = row.map((value, columnIndex) => "<c r=\"" + columnName(columnIndex) + (rowIndex + 1) + "\"" + (rowIndex === 0 ? " s=\"1\"" : "") + " t=\"inlineStr\"><is><t xml:space=\"preserve\">" + xmlEscape(value) + "</t></is></c>").join("");
+    return "<row r=\"" + (rowIndex + 1) + "\">" + cells + "</row>";
+  }).join("");
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetViews><sheetView workbookViewId=\"0\"><pane ySplit=\"1\" topLeftCell=\"A2\" activePane=\"bottomLeft\" state=\"frozen\"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight=\"18\"/><cols><col min=\"1\" max=\"1\" width=\"22\" customWidth=\"1\"/><col min=\"2\" max=\"2\" width=\"48\" customWidth=\"1\"/><col min=\"3\" max=\"3\" width=\"22\" customWidth=\"1\"/><col min=\"4\" max=\"9\" width=\"24\" customWidth=\"1\"/></cols><sheetData>" + data + "</sheetData><autoFilter ref=\"A1:I" + rows.length + "\"/></worksheet>";
+}
+
+function crc32(bytes: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function zipStore(entries: Array<{ name: string; content: string }>) {
+  const encoder = new TextEncoder();
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let localOffset = 0;
+  for (const entry of entries) {
+    const name = encoder.encode(entry.name);
+    const data = encoder.encode(entry.content);
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + name.length + data.length);
+    const localView = new DataView(local.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(26, name.length, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, data.length, true);
+    localView.setUint32(22, data.length, true);
+    local.set(name, 30);
+    local.set(data, 30 + name.length);
+    localParts.push(local);
+
+    const central = new Uint8Array(46 + name.length);
+    const centralView = new DataView(central.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, data.length, true);
+    centralView.setUint32(24, data.length, true);
+    centralView.setUint16(28, name.length, true);
+    centralView.setUint32(42, localOffset, true);
+    central.set(name, 46);
+    centralParts.push(central);
+    localOffset += local.length;
+  }
+  const centralSize = centralParts.reduce((total, part) => total + part.length, 0);
+  const localSize = localParts.reduce((total, part) => total + part.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(8, entries.length, true);
+  endView.setUint16(10, entries.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, localSize, true);
+  return new Blob([...localParts, ...centralParts, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+export function downloadRegulationsWorkbook(filename: string, records: RegulationExportRecord[]) {
+  const currentRecords = records.filter((record) => record.status === "active");
+  const upcomingRecords = records.filter((record) => record.status === "upcoming");
+  const reviewRecords = records.filter((record) => record.status === "review");
+  const rowsFor = (items: RegulationExportRecord[]) => [
+    exportHeaders,
+    ...items.map((item) => [item.code, item.title, item.category, exportStatusLabel(item.status), item.effective, item.source, item.updated, item.note, item.href]),
+  ];
+  const sheets = exportSheets.map((sheetName) => ({
+    name: sheetName,
+    rows: rowsFor(sheetName === "现行法规" ? currentRecords : sheetName === "即将实施" ? upcomingRecords : sheetName === "待核对" ? reviewRecords : currentRecords.filter((record) => exportCategory(record) === sheetName)),
+  }));
+  const sheetEntries = sheets.map((sheet, index) => "<Override PartName=\"/xl/worksheets/sheet" + (index + 1) + ".xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>").join("");
+  const sheetRelationships = sheets.map((_, index) => "<Relationship Id=\"rId" + (index + 1) + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet" + (index + 1) + ".xml\"/>").join("");
+  const workbookSheets = sheets.map((sheet, index) => "<sheet name=\"" + xmlEscape(sheet.name) + "\" sheetId=\"" + (index + 1) + "\" r:id=\"rId" + (index + 1) + "\"/>").join("");
+  const entries = [
+    { name: "[Content_Types].xml", content: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>" + sheetEntries + "</Types>" },
+    { name: "_rels/.rels", content: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>" },
+    { name: "xl/workbook.xml", content: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets>" + workbookSheets + "</sheets></workbook>" },
+    { name: "xl/_rels/workbook.xml.rels", content: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" + sheetRelationships + "<Relationship Id=\"rId" + (sheets.length + 1) + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>" },
+    { name: "xl/styles.xml", content: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Aptos\"/></font><font><b/><sz val=\"11\"/><name val=\"Aptos\"/></font></fonts><fills count=\"2\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill></fills><borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"2\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" applyFont=\"1\"/></cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles></styleSheet>" },
+    ...sheets.map((sheet, index) => ({ name: "xl/worksheets/sheet" + (index + 1) + ".xml", content: worksheetXml(sheet.rows) })),
+  ];
+  const url = URL.createObjectURL(zipStore(entries));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}

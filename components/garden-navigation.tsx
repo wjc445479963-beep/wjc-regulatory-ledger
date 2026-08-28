@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { useEffect } from "react";
+import { sitePath } from "@/lib/site-path";
 
 const HOME_SCROLL_PARAM = "gardenReturn";
 
@@ -12,18 +13,19 @@ type RememberGardenPositionLinkProps = Omit<ComponentProps<typeof Link>, "href" 
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 };
 
-export function RememberGardenPositionLink({ onClick, ...props }: RememberGardenPositionLinkProps) {
+export function RememberGardenPositionLink({ onClick, href, ...props }: RememberGardenPositionLinkProps) {
   const router = useRouter();
 
   return (
     <Link
       {...props}
+      href={sitePath(href)}
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) {
           event.preventDefault();
-          const separator = props.href.includes("?") ? "&" : "?";
-          router.push(`${props.href}${separator}${HOME_SCROLL_PARAM}=${Math.round(window.scrollY)}`);
+          const separator = href.includes("?") ? "&" : "?";
+          router.push(sitePath(`${href}${separator}${HOME_SCROLL_PARAM}=${Math.round(window.scrollY)}`));
         }
       }}
     />
@@ -54,12 +56,12 @@ export function ReturnToGardenLink({ children, className }: { children: ReactNod
 
   return (
     <Link
-      href="/"
+      href={sitePath("/")}
       className={className}
       onClick={(event) => {
         event.preventDefault();
         const currentPosition = new URLSearchParams(window.location.search).get(HOME_SCROLL_PARAM);
-        router.push(currentPosition === null ? "/" : `/?${HOME_SCROLL_PARAM}=${currentPosition}`);
+        router.push(sitePath(currentPosition === null ? "/" : `/?${HOME_SCROLL_PARAM}=${currentPosition}`));
       }}
     >
       {children}

@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { HomeScrollRestorer, RememberGardenPositionLink } from "@/components/garden-navigation";
+import { sitePath } from "@/lib/site-path";
 
 type Tone = "moss" | "sky" | "rose" | "violet";
 
@@ -72,7 +73,7 @@ export default function Home() {
       <header className="garden-header relative overflow-hidden text-[#f5f3e8]">
         <div className="garden-header-glow" aria-hidden="true" />
         <div className="relative mx-auto flex max-w-[1440px] items-center justify-between px-6 py-5 lg:px-10">
-          <Link href="/" className="group flex items-center gap-3" aria-label="返回花园首页">
+          <Link href={sitePath("/")} className="group flex items-center gap-3" aria-label="返回花园首页">
             <div className="flex size-11 items-center justify-center rounded-[18px] bg-[#d8e9bd] text-[#315c3c] shadow-[0_8px_24px_rgba(8,33,20,0.2)] transition group-hover:-rotate-3">
               <ShieldCheck className="size-5" />
             </div>
@@ -105,7 +106,7 @@ export default function Home() {
             <p className="garden-script mb-16 text-3xl text-[#70986a] md:mb-20 md:text-4xl">come in, stay awhile</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/regulations"
+                href={sitePath("/regulations")}
                 className="inline-flex items-center gap-2 rounded-full bg-[#376947] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(55,105,71,0.2)] transition hover:-translate-y-0.5 hover:bg-[#2e5b3c]"
               >
                 进入法规工作站 <ArrowRight className="size-4" />
@@ -123,7 +124,7 @@ export default function Home() {
           </div>
 
           <div className="garden-photo relative min-h-[360px] overflow-hidden rounded-[42px] border border-[#d5d6b9] bg-[#193c2d] shadow-[0_22px_60px_rgba(41,78,48,0.2)] lg:min-h-[530px]">
-            <img src="/garden-banner.png" alt="黄昏时的花园" className="absolute inset-0 size-full object-cover" />
+            <img src={sitePath("/garden-banner.png")} alt="黄昏时的花园" className="absolute inset-0 size-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-tr from-[#102e25]/55 via-transparent to-[#d9e6b1]/10" />
             <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
               <div>
@@ -137,9 +138,9 @@ export default function Home() {
 
         <section id="modules" className="relative mt-20 scroll-mt-8 lg:mt-28">
           <div className="garden-vine garden-vine-side" aria-hidden="true"><Leaf className="size-8 rotate-[-35deg]" /><Leaf className="size-5 rotate-12" /></div>
-          <img src="/garden-notes.png" alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
-          <img src="/garden-fireflies.png" alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
-          <img src="/garden-arch-depth.png" alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-path" />
+           <img src={sitePath("/garden-notes.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
+           <img src={sitePath("/garden-fireflies.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
+           <img src={sitePath("/garden-arch-depth.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-path" />
           <div className="relative z-10 mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mt-1 text-sm font-medium tracking-[0.18em] text-[#70986a]">花园地图</p>
