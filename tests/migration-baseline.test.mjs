@@ -80,6 +80,13 @@ test("uses the requested secret garden key and music door", async () => {
   assert.match(page, /https:\/\/163cn\.tv\/bexp6IId/);
 });
 
+test("explains how to launch the Doupi desktop download", async () => {
+  const page = await readFile(join(root, "app/pet/page.tsx"), "utf8");
+  assert.match(page, /下载后请先解压缩/);
+  assert.match(page, /install-and-run\.cmd/);
+  assert.match(page, /完成安装和启动/);
+});
+
 test("keeps the recovered comparison records and public workbook export", async () => {
   const data = await readFile(join(root, "app/regulations-data.ts"), "utf8");
   const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
