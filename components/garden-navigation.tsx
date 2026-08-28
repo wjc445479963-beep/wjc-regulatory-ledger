@@ -1,31 +1,34 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { ComponentProps, MouseEvent, ReactNode } from "react";
+import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from "react";
 import { useEffect } from "react";
 import { sitePath } from "@/lib/site-path";
 
 const HOME_SCROLL_PARAM = "gardenReturn";
 
-type RememberGardenPositionLinkProps = Omit<ComponentProps<typeof Link>, "href" | "onClick"> & {
+type RememberGardenPositionLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "onClick"> & {
   href: string;
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 };
 
 export function RememberGardenPositionLink({ onClick, href, ...props }: RememberGardenPositionLinkProps) {
-  const router = useRouter();
-
   return (
-    <Link
+    <a
       {...props}
       href={sitePath(href)}
       onClick={(event) => {
         onClick?.(event);
-        if (!event.defaultPrevented) {
+        if (
+          !event.defaultPrevented &&
+          event.button === 0 &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
           event.preventDefault();
           const separator = href.includes("?") ? "&" : "?";
-          router.push(sitePath(`${href}${separator}${HOME_SCROLL_PARAM}=${Math.round(window.scrollY)}`));
+          window.location.assign(sitePath(`${href}${separator}${HOME_SCROLL_PARAM}=${Math.round(window.scrollY)}`));
         }
       }}
     />
@@ -52,19 +55,25 @@ export function HomeScrollRestorer() {
 }
 
 export function ReturnToGardenLink({ children, className }: { children: ReactNode; className?: string }) {
-  const router = useRouter();
-
   return (
-    <Link
+    <a
       href={sitePath("/")}
       className={className}
       onClick={(event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) return;
+
         event.preventDefault();
         const currentPosition = new URLSearchParams(window.location.search).get(HOME_SCROLL_PARAM);
-        router.push(sitePath(currentPosition === null ? "/" : `/?${HOME_SCROLL_PARAM}=${currentPosition}`));
+        window.location.assign(sitePath(currentPosition === null ? "/" : `/?${HOME_SCROLL_PARAM}=${currentPosition}`));
       }}
     >
       {children}
-    </Link>
+    </a>
   );
 }
