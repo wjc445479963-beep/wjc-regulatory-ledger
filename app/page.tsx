@@ -131,7 +131,9 @@ export default function Home() {
 
           <div className="garden-photo relative min-h-[360px] overflow-hidden rounded-[42px] border border-[#d5d6b9] bg-[#193c2d] shadow-[0_22px_60px_rgba(41,78,48,0.2)] lg:min-h-[530px]">
             <picture>
+              <source media="(max-width: 1279px)" type="image/webp" srcSet={sitePath("/garden-banner-mobile.webp")} />
               <source media="(max-width: 1279px)" srcSet={sitePath("/garden-banner-mobile.jpg")} />
+              <source type="image/webp" srcSet={sitePath("/garden-banner.webp")} />
               <img
                 src={sitePath("/garden-banner.jpg")}
                 alt="黄昏时的花园"
@@ -158,14 +160,16 @@ export default function Home() {
            <img src={sitePath("/garden-notes.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
            <img src={sitePath("/garden-fireflies.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
            <picture className="garden-accent garden-accent-image garden-accent-path">
+             <source media="(max-width: 1279px)" type="image/webp" srcSet={sitePath("/garden-arch-depth-mobile.webp")} />
              <source media="(max-width: 1279px)" srcSet={sitePath("/garden-arch-depth-mobile.png")} />
+             <source type="image/webp" srcSet={sitePath("/garden-arch-depth.webp")} />
              <img
                src={sitePath("/garden-arch-depth.png")}
                alt=""
                aria-hidden="true"
                width={1536}
                height={1024}
-               loading="eager"
+               loading="lazy"
                fetchPriority="low"
                decoding="async"
                className="size-full object-contain"
