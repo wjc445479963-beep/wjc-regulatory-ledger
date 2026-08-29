@@ -6,6 +6,7 @@ import {
   Heart,
   Leaf,
   LockKeyhole,
+  Wine,
   MoonStar,
   ShieldCheck,
   Sparkles,
@@ -23,6 +24,7 @@ const modules: Array<{
   description: string;
   icon: typeof BookOpenCheck;
   featured?: boolean;
+  external?: boolean;
   tone: Tone;
 }> = [
   {
@@ -57,6 +59,15 @@ const modules: Array<{
     description: "绕过篱笆，看看藏在里面的小小惊喜。",
     icon: LockKeyhole,
     tone: "violet",
+  },
+  {
+    href: "https://wjc445479963-beep.github.io/wjc-bar/",
+    title: "通往小酒馆",
+    eyebrow: "夜里有灯",
+    description: "调一杯属于你的心情，坐下来听听故事。",
+    icon: Wine,
+    external: true,
+    tone: "rose",
   },
 ];
 
@@ -130,7 +141,18 @@ export default function Home() {
           </div>
 
           <div className="garden-photo relative min-h-[360px] overflow-hidden rounded-[42px] border border-[#d5d6b9] bg-[#193c2d] shadow-[0_22px_60px_rgba(41,78,48,0.2)] lg:min-h-[530px]">
-            <img src={sitePath("/garden-banner.png")} alt="黄昏时的花园" className="absolute inset-0 size-full object-cover" />
+            <picture>
+              <source media="(max-width: 1023px)" srcSet={sitePath("/garden-banner-mobile.jpg")} />
+              <img
+                src={sitePath("/garden-banner.jpg")}
+                alt="黄昏时的花园"
+                width={1672}
+                height={941}
+                fetchPriority="high"
+                decoding="async"
+                className="absolute inset-0 size-full object-cover"
+              />
+            </picture>
             <div className="absolute inset-0 bg-gradient-to-tr from-[#102e25]/55 via-transparent to-[#d9e6b1]/10" />
             <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
               <div>
@@ -154,23 +176,32 @@ export default function Home() {
             <p className="max-w-sm text-sm leading-6 text-[#66806a]">每条小路都有自己的去处，有些只是绕得稍微远一点。</p>
           </div>
           <div className="relative z-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {modules.map(({ href, title, eyebrow, description, icon: Icon, featured, tone }) => (
-              <RememberGardenPositionLink
-                href={href}
-                key={href}
-                className={`garden-card group relative overflow-hidden rounded-[28px] border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(57,97,61,0.13)] ${featured ? "border-[#b7cfaa] bg-[#eff5e4] md:col-span-2 xl:col-span-2" : "border-[#d9dfc9] bg-[#f8f8ef]/90"}`}
-              >
-                <div className="absolute -right-5 -top-8 size-28 rounded-full border border-[#b7cfaa]/30" aria-hidden="true" />
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className={`flex size-12 items-center justify-center rounded-[17px] ${toneClasses[tone]}`}><Icon className="size-5" /></div>
-                  <ArrowRight className="size-5 text-[#9ab19a] transition group-hover:translate-x-1 group-hover:text-[#4b8056]" />
-                </div>
-                <p className="relative mt-7 text-[10px] font-semibold tracking-[0.2em] text-[#79927b]">{eyebrow}</p>
-                <h3 className="relative mt-2 text-xl font-semibold text-[#285238]">{title}</h3>
-                <p className="relative mt-3 max-w-xl text-sm leading-6 text-[#66806a]">{description}</p>
-                {featured && <span className="relative mt-6 inline-flex items-center gap-1.5 rounded-full border border-[#a8c49b] px-3 py-1 text-xs font-medium text-[#4d7d53]"><Leaf className="size-3" /> 主入口</span>}
-              </RememberGardenPositionLink>
-            ))}
+            {modules.map(({ href, title, eyebrow, description, icon: Icon, featured, external, tone }) => {
+              const cardClassName = `garden-card group relative overflow-hidden rounded-[28px] border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(57,97,61,0.13)] ${featured ? "border-[#b7cfaa] bg-[#eff5e4] md:col-span-2 xl:col-span-2" : "border-[#d9dfc9] bg-[#f8f8ef]/90"}`;
+              const cardContent = (
+                <>
+                  <div className="absolute -right-5 -top-8 size-28 rounded-full border border-[#b7cfaa]/30" aria-hidden="true" />
+                  <div className="relative flex items-start justify-between gap-4">
+                    <div className={`flex size-12 items-center justify-center rounded-[17px] ${toneClasses[tone]}`}><Icon className="size-5" /></div>
+                    <ArrowRight className="size-5 text-[#9ab19a] transition group-hover:translate-x-1 group-hover:text-[#4b8056]" />
+                  </div>
+                  <p className="relative mt-7 text-[10px] font-semibold tracking-[0.2em] text-[#79927b]">{eyebrow}</p>
+                  <h3 className="relative mt-2 text-xl font-semibold text-[#285238]">{title}</h3>
+                  <p className="relative mt-3 max-w-xl text-sm leading-6 text-[#66806a]">{description}</p>
+                  {featured && <span className="relative mt-6 inline-flex items-center gap-1.5 rounded-full border border-[#a8c49b] px-3 py-1 text-xs font-medium text-[#4d7d53]"><Leaf className="size-3" /> 主入口</span>}
+                </>
+              );
+
+              return external ? (
+                <a href={href} key={href} className={cardClassName} target="_blank" rel="noreferrer">
+                  {cardContent}
+                </a>
+              ) : (
+                <RememberGardenPositionLink href={href} key={href} className={cardClassName}>
+                  {cardContent}
+                </RememberGardenPositionLink>
+              );
+            })}
           </div>
         </section>
 
