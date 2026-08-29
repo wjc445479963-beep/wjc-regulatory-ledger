@@ -237,22 +237,41 @@ a { text-decoration: none; }
 }
 
 .garden-accent-path {
-  top: 0.5rem;
+  top: 1.5rem;
   right: 0;
   z-index: 0;
-  width: min(1080px, 100%);
+  width: min(1180px, 100%);
   height: auto;
   aspect-ratio: 3 / 2;
   filter: drop-shadow(0 18px 22px rgb(57 97 61 / 9%));
   opacity: 1;
   transform: rotate(1deg);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 92%, rgb(0 0 0 / 0) 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 92%, rgb(0 0 0 / 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 96%, rgb(0 0 0 / 0) 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 96%, rgb(0 0 0 / 0) 100%);
+}
+
+@media (max-width: 1023px) {
+  .garden-accent-notes,
+  .garden-accent-fireflies {
+    display: none;
+  }
+
+  .garden-accent-path {
+    display: block;
+    top: 2rem;
+    right: -8rem;
+    width: min(760px, 125vw);
+    opacity: 0.58;
+    -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, #000 12%, #000 93%, rgb(0 0 0 / 0) 100%);
+    mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, #000 12%, #000 93%, rgb(0 0 0 / 0) 100%);
+  }
 }
 
 @media (max-width: 767px) {
-  .garden-accent {
-    display: none;
+  .garden-accent-path {
+    right: -11rem;
+    width: 650px;
+    opacity: 0.48;
   }
 }
 

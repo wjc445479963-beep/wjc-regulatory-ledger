@@ -157,7 +157,16 @@ export default function Home() {
           <div className="garden-vine garden-vine-side" aria-hidden="true"><Leaf className="size-8 rotate-[-35deg]" /><Leaf className="size-5 rotate-12" /></div>
            <img src={sitePath("/garden-notes.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
            <img src={sitePath("/garden-fireflies.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
-           <img src={sitePath("/garden-arch-depth.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-path" />
+           <img
+             src={sitePath("/garden-arch-depth.png")}
+             srcSet={`${sitePath("/garden-arch-depth-mobile.png")} 640w, ${sitePath("/garden-arch-depth.png")} 1536w`}
+             sizes="(max-width: 1023px) 640px, 1080px"
+             alt=""
+             aria-hidden="true"
+             loading="lazy"
+             decoding="async"
+             className="garden-accent garden-accent-image garden-accent-path"
+           />
           <div className="relative z-10 mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mt-1 text-sm font-medium tracking-[0.18em] text-[#70986a]">花园地图</p>
