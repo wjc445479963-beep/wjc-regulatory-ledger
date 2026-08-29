@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
-const githubPagesBasePath = process.env.GITHUB_PAGES === "true" ? "/wjc-regulatory-ledger" : "";
+const githubPagesBasePath =
+  process.env.GITHUB_PAGES === "true" && process.env.GITHUB_PAGES_PROJECT_SITE === "true"
+    ? "/wjc-regulatory-ledger"
+    : "";
 
 const nextConfig: NextConfig = {
   output: "export",
