@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { HomeScrollRestorer, RememberGardenPositionLink } from "@/components/garden-navigation";
 import { sitePath } from "@/lib/site-path";
+import { SITE_VERSION } from "@/lib/site-version";
 
 type Tone = "moss" | "sky" | "rose" | "violet";
 
@@ -88,9 +89,14 @@ export default function Home() {
             <a href="#modules" className="transition hover:text-white">花园地图</a>
             <a href="#about" className="transition hover:text-white">关于这里</a>
           </nav>
-          <span className="rounded-full border border-[#abc39f]/30 bg-[#ffffff0b] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#cfddc9]">
-            欢迎来逛
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="rounded-full border border-[#abc39f]/30 bg-[#ffffff0b] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#cfddc9]">
+              欢迎来逛
+            </span>
+            <span className="text-[10px] font-medium tracking-[0.14em] text-[#b9cda9]" aria-label={`网站版本 ${SITE_VERSION}`}>
+              {SITE_VERSION}
+            </span>
+          </div>
         </div>
       </header>
 
