@@ -139,6 +139,7 @@ body {
 a { text-decoration: none; }
 
 .garden-page {
+  overflow-x: clip;
   background-color: #eef3e7;
   background-image:
     radial-gradient(circle at 12% 11%, rgb(202 222 181 / 35%) 0 2px, transparent 3px),
@@ -237,7 +238,7 @@ a { text-decoration: none; }
 }
 
 .garden-accent-path {
-  top: 1.5rem;
+  top: 0;
   right: 0;
   z-index: 0;
   width: min(1180px, 100%);
@@ -258,10 +259,10 @@ a { text-decoration: none; }
 
   .garden-accent-path {
     display: block;
-    top: 2rem;
-    right: -8rem;
-    width: min(760px, 125vw);
-    opacity: 0.58;
+    top: 0;
+    right: -5rem;
+    width: min(760px, 145vw);
+    opacity: 0.7;
     -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, #000 12%, #000 93%, rgb(0 0 0 / 0) 100%);
     mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, #000 12%, #000 93%, rgb(0 0 0 / 0) 100%);
   }
@@ -269,9 +270,9 @@ a { text-decoration: none; }
 
 @media (max-width: 767px) {
   .garden-accent-path {
-    right: -11rem;
-    width: 650px;
-    opacity: 0.48;
+    right: -6rem;
+    width: 700px;
+    opacity: 0.62;
   }
 }
 
@@ -298,6 +299,16 @@ a { text-decoration: none; }
   text-align: right;
   text-shadow: 0 2px 16px rgb(7 19 32 / 85%);
   transition: transform 300ms ease, filter 300ms ease;
+}
+
+.garden-bar-dock {
+  position: absolute;
+  right: 0;
+  bottom: 0.5rem;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  width: min(19rem, 42%);
 }
 
 .garden-bar-link:hover {
@@ -341,6 +352,14 @@ a { text-decoration: none; }
 }
 
 @media (max-width: 767px) {
+  .garden-bar-dock {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
   .garden-bar-link {
     padding-right: 0.5rem;
   }

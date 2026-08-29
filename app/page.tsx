@@ -163,7 +163,8 @@ export default function Home() {
              sizes="(max-width: 1023px) 640px, 1080px"
              alt=""
              aria-hidden="true"
-             loading="lazy"
+             loading="eager"
+             fetchPriority="low"
              decoding="async"
              className="garden-accent garden-accent-image garden-accent-path"
            />
@@ -193,7 +194,7 @@ export default function Home() {
               return <RememberGardenPositionLink href={href} key={href} className={cardClassName}>{cardContent}</RememberGardenPositionLink>;
             })}
           </div>
-          <div className="relative z-10 flex justify-end pt-3">
+          <div className="garden-bar-dock">
             <a href="https://wjc445479963-beep.github.io/wjc-bar/" className="garden-bar-link" target="_blank" rel="noreferrer">
               <span className="garden-bar-link-kicker">WARM NIGHT · BAR</span>
               <span className="garden-bar-link-title">通往小酒馆</span>
