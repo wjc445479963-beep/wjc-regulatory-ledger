@@ -6,7 +6,6 @@ import {
   Heart,
   Leaf,
   LockKeyhole,
-  Wine,
   MoonStar,
   ShieldCheck,
   Sparkles,
@@ -24,7 +23,6 @@ const modules: Array<{
   description: string;
   icon: typeof BookOpenCheck;
   featured?: boolean;
-  external?: boolean;
   tone: Tone;
 }> = [
   {
@@ -59,15 +57,6 @@ const modules: Array<{
     description: "绕过篱笆，看看藏在里面的小小惊喜。",
     icon: LockKeyhole,
     tone: "violet",
-  },
-  {
-    href: "https://wjc445479963-beep.github.io/wjc-bar/",
-    title: "通往小酒馆",
-    eyebrow: "夜里有灯",
-    description: "调一杯属于你的心情，坐下来听听故事。",
-    icon: Wine,
-    external: true,
-    tone: "rose",
   },
 ];
 
@@ -176,7 +165,7 @@ export default function Home() {
             <p className="max-w-sm text-sm leading-6 text-[#66806a]">每条小路都有自己的去处，有些只是绕得稍微远一点。</p>
           </div>
           <div className="relative z-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {modules.map(({ href, title, eyebrow, description, icon: Icon, featured, external, tone }) => {
+            {modules.map(({ href, title, eyebrow, description, icon: Icon, featured, tone }) => {
               const cardClassName = `garden-card group relative overflow-hidden rounded-[28px] border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(57,97,61,0.13)] ${featured ? "border-[#b7cfaa] bg-[#eff5e4] md:col-span-2 xl:col-span-2" : "border-[#d9dfc9] bg-[#f8f8ef]/90"}`;
               const cardContent = (
                 <>
@@ -192,18 +181,15 @@ export default function Home() {
                 </>
               );
 
-              return external ? (
-                <a href={href} key={href} className="garden-bar-link" target="_blank" rel="noreferrer">
-                  <span className="garden-bar-link-kicker">WARM NIGHT · BAR</span>
-                  <span className="garden-bar-link-title">通往小酒馆</span>
-                  <span className="garden-bar-link-action">enter slowly <ArrowRight className="size-4" /></span>
-                </a>
-              ) : (
-                <RememberGardenPositionLink href={href} key={href} className={cardClassName}>
-                  {cardContent}
-                </RememberGardenPositionLink>
-              );
+              return <RememberGardenPositionLink href={href} key={href} className={cardClassName}>{cardContent}</RememberGardenPositionLink>;
             })}
+          </div>
+          <div className="relative z-10 flex justify-end pt-3">
+            <a href="https://wjc445479963-beep.github.io/wjc-bar/" className="garden-bar-link" target="_blank" rel="noreferrer">
+              <span className="garden-bar-link-kicker">WARM NIGHT · BAR</span>
+              <span className="garden-bar-link-title">通往小酒馆</span>
+              <span className="garden-bar-link-action">enter slowly <ArrowRight className="size-4" /></span>
+            </a>
           </div>
         </section>
 
