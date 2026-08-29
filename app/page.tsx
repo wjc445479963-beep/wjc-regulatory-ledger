@@ -68,7 +68,7 @@ const toneClasses: Record<Tone, string> = {
 
 export default function Home() {
   return (
-    <main className="garden-page min-h-screen overflow-x-hidden text-[#183b2d]">
+    <main className="garden-page min-h-screen text-[#183b2d]">
       <HomeScrollRestorer />
       <header className="garden-header relative overflow-hidden text-[#f5f3e8]">
         <div className="garden-header-glow" aria-hidden="true" />
