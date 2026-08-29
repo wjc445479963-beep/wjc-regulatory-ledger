@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { HomeScrollRestorer, RememberGardenPositionLink } from "@/components/garden-navigation";
+import { GardenAnchorLink, HomeScrollRestorer, RememberGardenPositionLink } from "@/components/garden-navigation";
 import { sitePath } from "@/lib/site-path";
 import { SITE_VERSION } from "@/lib/site-version";
 
@@ -86,14 +86,14 @@ export default function Home() {
             </div>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-[#c1d1bb] md:flex" aria-label="花园导航">
-            <a href="#modules" className="transition hover:text-white">花园地图</a>
-            <a href="#about" className="transition hover:text-white">关于这里</a>
+            <GardenAnchorLink targetId="modules" className="transition hover:text-white">花园地图</GardenAnchorLink>
+            <GardenAnchorLink targetId="about" className="transition hover:text-white">关于这里</GardenAnchorLink>
           </nav>
           <div className="flex items-center gap-3">
             <span className="rounded-full border border-[#abc39f]/30 bg-[#ffffff0b] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[#cfddc9]">
               欢迎来逛
             </span>
-            <span className="text-[10px] font-medium tracking-[0.14em] text-[#b9cda9]" aria-label={`网站版本 ${SITE_VERSION}`}>
+            <span className="relative -right-1 -top-1 font-serif text-[11px] italic font-medium tracking-[0.08em] text-[#b9cda9]" aria-label={`网站版本 ${SITE_VERSION}`}>
               {SITE_VERSION}
             </span>
           </div>
@@ -117,12 +117,12 @@ export default function Home() {
               >
                 进入法规工作站 <ArrowRight className="size-4" />
               </Link>
-              <a
-                href="#modules"
+              <GardenAnchorLink
+                targetId="modules"
                 className="inline-flex items-center gap-2 rounded-full border border-[#b8d0ae] bg-[#f7f6ed]/80 px-5 py-3 text-sm font-semibold text-[#4d7252] transition hover:-translate-y-0.5 hover:border-[#7ea77a]"
               >
                 逛逛花园 <Leaf className="size-4" />
-              </a>
+              </GardenAnchorLink>
             </div>
             <div className="mt-9 flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-[#789178]">
               <span className="garden-stamp"><Sparkles className="size-3.5" /> 安静的小角落</span>

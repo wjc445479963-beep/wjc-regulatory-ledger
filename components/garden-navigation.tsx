@@ -11,6 +11,37 @@ type RememberGardenPositionLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorEleme
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 };
 
+type GardenAnchorLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "onClick"> & {
+  targetId: string;
+};
+
+export function GardenAnchorLink({ targetId, ...props }: GardenAnchorLinkProps) {
+  return (
+    <a
+      {...props}
+      href={`#${targetId}`}
+      onClick={(event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) return;
+
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        event.preventDefault();
+        const top = target.getBoundingClientRect().top + window.scrollY - 32;
+        window.scrollTo({ top, behavior: "smooth" });
+        window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#${targetId}`);
+        (document.activeElement as HTMLElement | null)?.blur();
+      }}
+    />
+  );
+}
+
 export function RememberGardenPositionLink({ onClick, href, ...props }: RememberGardenPositionLinkProps) {
   return (
     <a
@@ -38,17 +69,26 @@ export function RememberGardenPositionLink({ onClick, href, ...props }: Remember
 export function HomeScrollRestorer() {
   useEffect(() => {
     const savedPosition = new URLSearchParams(window.location.search).get(HOME_SCROLL_PARAM);
-    if (savedPosition === null) return;
+    const scrollTop = savedPosition === null ? Number.NaN : Number(savedPosition);
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    const shouldResetAfterReload = navigation?.type === "reload" || window.location.hash.length > 0;
+    const shouldRestoreSavedPosition = Number.isFinite(scrollTop);
 
-    const scrollTop = Number(savedPosition);
-    if (!Number.isFinite(scrollTop)) return;
+    if (!shouldResetAfterReload && !shouldRestoreSavedPosition) return;
 
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete(HOME_SCROLL_PARAM);
+    if (shouldResetAfterReload) cleanUrl.hash = "";
     window.history.replaceState({}, "", cleanUrl);
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => window.scrollTo(0, scrollTop));
+      window.requestAnimationFrame(() => window.scrollTo(0, shouldRestoreSavedPosition ? scrollTop : 0));
     });
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
   }, []);
 
   return null;
