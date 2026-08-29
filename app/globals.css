@@ -139,7 +139,7 @@ body {
 a { text-decoration: none; }
 
 .garden-page {
-  overflow-x: clip;
+  overflow-x: hidden;
   background-color: #eef3e7;
   background-image:
     radial-gradient(circle at 12% 11%, rgb(202 222 181 / 35%) 0 2px, transparent 3px),
@@ -220,6 +220,13 @@ a { text-decoration: none; }
   object-fit: contain;
 }
 
+.garden-accent-path img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .garden-accent-notes {
   top: 4.5rem;
   right: 37%;
@@ -251,7 +258,7 @@ a { text-decoration: none; }
   mask-image: linear-gradient(to bottom, #000 0%, #000 96%, rgb(0 0 0 / 0) 100%);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1279px) {
   .garden-accent-notes,
   .garden-accent-fireflies {
     display: none;

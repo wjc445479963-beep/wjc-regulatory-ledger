@@ -131,7 +131,7 @@ export default function Home() {
 
           <div className="garden-photo relative min-h-[360px] overflow-hidden rounded-[42px] border border-[#d5d6b9] bg-[#193c2d] shadow-[0_22px_60px_rgba(41,78,48,0.2)] lg:min-h-[530px]">
             <picture>
-              <source media="(max-width: 1023px)" srcSet={sitePath("/garden-banner-mobile.jpg")} />
+              <source media="(max-width: 1279px)" srcSet={sitePath("/garden-banner-mobile.jpg")} />
               <img
                 src={sitePath("/garden-banner.jpg")}
                 alt="黄昏时的花园"
@@ -157,17 +157,20 @@ export default function Home() {
           <div className="garden-vine garden-vine-side" aria-hidden="true"><Leaf className="size-8 rotate-[-35deg]" /><Leaf className="size-5 rotate-12" /></div>
            <img src={sitePath("/garden-notes.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
            <img src={sitePath("/garden-fireflies.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
-           <img
-             src={sitePath("/garden-arch-depth.png")}
-             srcSet={`${sitePath("/garden-arch-depth-mobile.png")} 640w, ${sitePath("/garden-arch-depth.png")} 1536w`}
-             sizes="(max-width: 1023px) 640px, 1080px"
-             alt=""
-             aria-hidden="true"
-             loading="eager"
-             fetchPriority="low"
-             decoding="async"
-             className="garden-accent garden-accent-image garden-accent-path"
-           />
+           <picture className="garden-accent garden-accent-image garden-accent-path">
+             <source media="(max-width: 1279px)" srcSet={sitePath("/garden-arch-depth-mobile.png")} />
+             <img
+               src={sitePath("/garden-arch-depth.png")}
+               alt=""
+               aria-hidden="true"
+               width={1536}
+               height={1024}
+               loading="eager"
+               fetchPriority="low"
+               decoding="async"
+               className="size-full object-contain"
+             />
+           </picture>
           <div className="relative z-10 mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mt-1 text-sm font-medium tracking-[0.18em] text-[#70986a]">花园地图</p>
