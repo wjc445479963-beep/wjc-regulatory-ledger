@@ -111,12 +111,12 @@ export default function Home() {
           <div className="relative z-10 flex flex-col justify-center py-8 lg:py-12">
             <p className="garden-script mb-16 text-3xl text-[#70986a] md:mb-20 md:text-4xl">come in, stay awhile</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
+              <a
                 href={sitePath("/regulations")}
                 className="inline-flex items-center gap-2 rounded-full bg-[#376947] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(55,105,71,0.2)] transition hover:-translate-y-0.5 hover:bg-[#2e5b3c]"
               >
                 进入法规工作站 <ArrowRight className="size-4" />
-              </Link>
+              </a>
               <GardenAnchorLink
                 targetId="modules"
                 className="inline-flex items-center gap-2 rounded-full border border-[#b8d0ae] bg-[#f7f6ed]/80 px-5 py-3 text-sm font-semibold text-[#4d7252] transition hover:-translate-y-0.5 hover:border-[#7ea77a]"
