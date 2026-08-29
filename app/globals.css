@@ -266,3 +266,65 @@ a { text-decoration: none; }
   background: linear-gradient(110deg, rgb(247 248 236 / 92%), rgb(232 241 218 / 86%));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 65%);
 }
+
+.garden-bar-link {
+  display: flex;
+  min-height: 244px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  padding: 1.5rem 1.5rem 1.75rem;
+  color: #f6d49b;
+  text-align: right;
+  text-shadow: 0 2px 16px rgb(7 19 32 / 85%);
+  transition: transform 300ms ease, filter 300ms ease;
+}
+
+.garden-bar-link:hover {
+  filter: brightness(1.12);
+  transform: translateY(-0.35rem);
+}
+
+.garden-bar-link:focus-visible {
+  outline: 2px solid #f4c978;
+  outline-offset: 5px;
+  border-radius: 1rem;
+}
+
+.garden-bar-link-kicker {
+  color: #f1b879;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.garden-bar-link-title {
+  color: #ffe0a7;
+  font-family: "STKaiti", "Kaiti SC", "KaiTi", "DFKai-SB", "Segoe Print", cursive;
+  font-size: clamp(1.85rem, 3.4vw, 2.8rem);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.garden-bar-link-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #f4c978;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.82rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 767px) {
+  .garden-bar-link {
+    min-height: 180px;
+    padding-right: 0.5rem;
+  }
+}
+

@@ -193,8 +193,10 @@ export default function Home() {
               );
 
               return external ? (
-                <a href={href} key={href} className={cardClassName} target="_blank" rel="noreferrer">
-                  {cardContent}
+                <a href={href} key={href} className="garden-bar-link" target="_blank" rel="noreferrer">
+                  <span className="garden-bar-link-kicker">WARM NIGHT · BAR</span>
+                  <span className="garden-bar-link-title">通往小酒馆</span>
+                  <span className="garden-bar-link-action">enter slowly <ArrowRight className="size-4" /></span>
                 </a>
               ) : (
                 <RememberGardenPositionLink href={href} key={href} className={cardClassName}>
@@ -225,3 +227,4 @@ export default function Home() {
     </main>
   );
 }
+
