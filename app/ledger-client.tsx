@@ -42,7 +42,7 @@ const compareMeta: Record<CompareStatus, { label: string; className: string }> =
   replace: { label: "需要替换", className: "border-red-200 bg-red-50 text-red-700" }, upcoming: { label: "即将实施", className: "border-amber-200 bg-amber-50 text-amber-700" }, active: { label: "现行", className: "border-emerald-200 bg-emerald-50 text-emerald-700" }, named: { label: "按名称识别", className: "border-violet-200 bg-violet-50 text-violet-700" }, recognized: { label: "已识别但未纳入主库", className: "border-cyan-200 bg-cyan-50 text-cyan-700" }, unmatched: { label: "未匹配", className: "border-slate-200 bg-slate-100 text-slate-600" },
 };
 const replacementMap: Record<string, string> = { "GB/T16886.1-2011": "GB/T16886.1-2022", "GB/T16886.3-2008": "GB/T16886.3-2019", "GB/T16886.6-2015": "GB/T16886.6-2022", "GB/T16886.9-2017": "GB/T16886.9-2022", "GB/T16886.10-2017": "GB/T16886.10-2024", "GB/T16886.12-2017": "GB/T16886.12-2023", "GB/T16886.17-2005": "GB/T16886.17-2025", "GB/T19633.1-2015": "GB/T19633.1-2024", "GB/T19633.2-2015": "GB/T19633.2-2024", "GB/T19973.2-2018": "GB/T19973.2-2025", "GB50457-2008": "GB50457-2019", "GB/T1.1-2009": "GB/T1.1-2020", "ISO11607-2:2006": "ISO11607-2:2019" };
-const upcomingMap: Record<string, string> = { "GB/T16886.2-2011": "GB/T16886.2-2026", "GB/T14233.2-2005": "GB/T14233.2-2025" };
+const upcomingMap: Record<string, string> = { "GB/T16886.2-2011": "GB/T16886.2-2026", "GB/T14233.2-2005": "GB/T14233.2-2025", "GB/T16292-2010": "GB/T16292-2025", "GB/T16293-2010": "GB/T16293-2025", "GB/T16294-2010": "GB/T16294-2025" };
 
 function normalizeCode(value: string) {
   let code = String(value ?? "").toUpperCase().trim().replace(/[（(）)【】\[\]：:，,]/g, "").replace(/[—–−－﹣]/g, "-").replace(/[／∕⁄]/g, "/");

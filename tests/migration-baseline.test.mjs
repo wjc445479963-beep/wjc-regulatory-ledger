@@ -75,7 +75,7 @@ test("keeps original fields and provenance in comparison exports", async () => {
 
 test("uses the requested secret garden key and music door", async () => {
   const page = await readFile(join(root, "app/secret-garden/page.tsx"), "utf8");
-  assert.match(page, /normalized === "wjc"/);
+  assert.match(page, /normalized === "wjcgarden"/);
   assert.doesNotMatch(page, /wjc666|"666"/);
   assert.match(page, /https:\/\/163cn\.tv\/bexp6IId/);
 });
