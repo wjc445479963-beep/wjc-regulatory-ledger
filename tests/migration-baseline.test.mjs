@@ -91,16 +91,17 @@ test("keeps the recovered comparison records and public workbook export", async 
   const data = await readFile(join(root, "app/regulations-data.ts"), "utf8");
   const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
   const workbook = await readFile(join(root, "app/excel-utils.ts"), "utf8");
-  assert.equal((data.match(/id: "imported-compare-/g) ?? []).length, 313);
+  assert.equal((data.match(/id: "imported-compare-/g) ?? []).length, 314);
   assert.equal((data.match(/category: "CFDA法律法规"/g) ?? []).length >= 214, true);
   assert.match(data, /status: "review", effective: "待核对"/);
   assert.match(data, /filter\(\(\{ status \}\) => status !== "review"\)/);
+  assert.match(data, /公开法规不得出现/);
   assert.match(client, /导出公开法规 Excel/);
   assert.match(client, /downloadRegulationsWorkbook\("法规主库\.xlsx", publicRegulations\)/);
   assert.match(workbook, /record\.status === "active"/);
   assert.match(workbook, /record\.status === "upcoming"/);
-  assert.match(workbook, /record\.status === "review"/);
-  for (const sheet of ["现行法规", "即将实施", "待核对", "CFDA法律法规", "YY", "GB", "ISO", "ASTM", "美国医疗器械法规", "欧盟医疗器械法规"]) {
+  assert.doesNotMatch(workbook, /record\.status === "review"/);
+  for (const sheet of ["现行法规", "即将实施", "CFDA法律法规", "YY", "GB", "ISO"]) {
     assert.match(workbook, new RegExp(sheet));
   }
 });
