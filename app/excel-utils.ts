@@ -200,7 +200,7 @@ type RegulationExportRecord = {
 };
 
 const exportHeaders = ["编号", "法规名称", "分类", "状态", "生效/关注日期", "来源机构", "最后核对", "说明", "官方来源链接"];
-const exportSheets = ["现行法规", "即将实施", "待核对", "CFDA法律法规", "YY", "GB", "ISO", "ASTM", "美国医疗器械法规", "欧盟医疗器械法规"];
+const exportSheets = ["现行法规", "即将实施", "CFDA法律法规", "YY", "GB", "ISO"];
 
 function exportStatusLabel(status: string) {
   return status === "active" ? "现行" : status === "upcoming" ? "即将实施" : status === "replaced" ? "已被替代" : "待核对";
@@ -299,14 +299,13 @@ function zipStore(entries: Array<{ name: string; content: string }>) {
 export function downloadRegulationsWorkbook(filename: string, records: RegulationExportRecord[]) {
   const currentRecords = records.filter((record) => record.status === "active");
   const upcomingRecords = records.filter((record) => record.status === "upcoming");
-  const reviewRecords = records.filter((record) => record.status === "review");
   const rowsFor = (items: RegulationExportRecord[]) => [
     exportHeaders,
     ...items.map((item) => [item.code, item.title, item.category, exportStatusLabel(item.status), item.effective, item.source, item.updated, item.note, item.href]),
   ];
   const sheets = exportSheets.map((sheetName) => ({
     name: sheetName,
-    rows: rowsFor(sheetName === "现行法规" ? currentRecords : sheetName === "即将实施" ? upcomingRecords : sheetName === "待核对" ? reviewRecords : currentRecords.filter((record) => exportCategory(record) === sheetName)),
+    rows: rowsFor(sheetName === "现行法规" ? currentRecords : sheetName === "即将实施" ? upcomingRecords : currentRecords.filter((record) => exportCategory(record) === sheetName)),
   }));
   const sheetEntries = sheets.map((sheet, index) => "<Override PartName=\"/xl/worksheets/sheet" + (index + 1) + ".xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>").join("");
   const sheetRelationships = sheets.map((_, index) => "<Relationship Id=\"rId" + (index + 1) + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet" + (index + 1) + ".xml\"/>").join("");

@@ -41,6 +41,54 @@ type ComparisonRow = {
 const compareMeta: Record<CompareStatus, { label: string; className: string }> = {
   replace: { label: "需要替换", className: "border-red-200 bg-red-50 text-red-700" }, upcoming: { label: "即将实施", className: "border-amber-200 bg-amber-50 text-amber-700" }, active: { label: "现行", className: "border-emerald-200 bg-emerald-50 text-emerald-700" }, named: { label: "按名称识别", className: "border-violet-200 bg-violet-50 text-violet-700" }, recognized: { label: "已识别但未纳入主库", className: "border-cyan-200 bg-cyan-50 text-cyan-700" }, unmatched: { label: "未匹配", className: "border-slate-200 bg-slate-100 text-slate-600" },
 };
+const categoryOrder = [
+  "法规·监管基础",
+  "法规·注册管理",
+  "法规·分类命名",
+  "法规·质量体系",
+  "法规·生产管理",
+  "法规·生产经营",
+  "法规·经营管理",
+  "法规·标签说明书",
+  "法规·临床评价",
+  "法规·药械组合产品",
+  "法规·上市后",
+  "法规·检验管理",
+  "法规·行政管理",
+  "法规·专项指导原则",
+  "质量体系",
+  "风险管理",
+  "生物学评价",
+  "微生物与内毒素",
+  "灭菌",
+  "灭菌设备",
+  "洁净环境",
+  "检验方法",
+  "通用检验",
+  "包装",
+  "材料表征",
+  "材料与产品标准",
+  "无源植入物",
+  "动物源材料",
+  "药品与检验参考",
+  "国家标准",
+  "医疗器械标准",
+  "国际指南",
+  "国际标准",
+];
+const categoryRank = new Map(categoryOrder.map((category, index) => [category, index]));
+const statusRank: Record<Status, number> = { active: 0, upcoming: 1, replaced: 2, review: 3 };
+function compareRegulations(a: Regulation, b: Regulation) {
+  const categoryDifference = (categoryRank.get(a.category) ?? categoryOrder.length) - (categoryRank.get(b.category) ?? categoryOrder.length);
+  if (categoryDifference) return categoryDifference;
+  const statusDifference = statusRank[a.status] - statusRank[b.status];
+  if (statusDifference) return statusDifference;
+  const dateA = /^\d{4}-\d{2}-\d{2}$/.test(a.effective) ? a.effective : "9999-99-99";
+  const dateB = /^\d{4}-\d{2}-\d{2}$/.test(b.effective) ? b.effective : "9999-99-99";
+  const dateDifference = dateA.localeCompare(dateB);
+  if (dateDifference) return dateDifference;
+  return a.code.localeCompare(b.code, "zh-CN", { numeric: true }) || a.title.localeCompare(b.title, "zh-CN");
+}
 const replacementMap: Record<string, string> = { "GB/T16886.1-2011": "GB/T16886.1-2022", "GB/T16886.3-2008": "GB/T16886.3-2019", "GB/T16886.6-2015": "GB/T16886.6-2022", "GB/T16886.9-2017": "GB/T16886.9-2022", "GB/T16886.10-2017": "GB/T16886.10-2024", "GB/T16886.12-2017": "GB/T16886.12-2023", "GB/T16886.17-2005": "GB/T16886.17-2025", "GB/T19633.1-2015": "GB/T19633.1-2024", "GB/T19633.2-2015": "GB/T19633.2-2024", "GB/T19973.2-2018": "GB/T19973.2-2025", "GB50457-2008": "GB50457-2019", "GB/T1.1-2009": "GB/T1.1-2020", "ISO11607-2:2006": "ISO11607-2:2019", "2014年第9号通告": "2022年第8号通告", "2017年第75号": "2022年第12号通告", "2021年第60号": "2026年第53号公告", "2014年第12号": "2025年第19号公告", "2014年第13号": "2025年第19号公告", "2014年第14号": "2025年第19号公告", "2016年第133号": "2025年第19号公告", "2017年第170号": "2025年第19号公告", "2018年第94号": "2025年第19号公告", "2020年第61号": "2025年第19号公告", "2021年第71号": "2025年第19号公告", "2023年第33号": "2025年第19号公告" };
 const upcomingMap: Record<string, string> = { "GB/T16886.2-2011": "GB/T16886.2-2026", "GB/T14233.2-2005": "GB/T14233.2-2025", "GB/T16292-2010": "GB/T16292-2025", "GB/T16293-2010": "GB/T16293-2025", "GB/T16294-2010": "GB/T16294-2025" };
 
@@ -97,8 +145,8 @@ function addComparisonProvenance(rows: SpreadsheetRow[], sourceRegulations: Regu
 
 export default function LedgerClient() {
   const [activeTab, setActiveTab] = useState("all"); const [category, setCategory] = useState("all"); const [query, setQuery] = useState(""); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState("20"); const [selected, setSelected] = useState<Regulation | null>(null); const [comparisonRows, setComparisonRows] = useState<ComparisonRow[]>([]); const [comparisonFilter, setComparisonFilter] = useState<CompareStatus | "all">("all"); const [uploadedName, setUploadedName] = useState(""); const [uploadError, setUploadError] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
-  const publicRegulations = useMemo(() => regulations.filter((item) => item.status !== "replaced" && item.status !== "review"), []);
-  const categories = useMemo(() => ["all", ...Array.from(new Set(publicRegulations.map((item) => item.category))).sort((a, b) => a.localeCompare(b, "zh-CN"))], [publicRegulations]);
+  const publicRegulations = useMemo(() => regulations.filter((item) => item.status !== "replaced" && item.status !== "review").sort(compareRegulations), []);
+  const categories = useMemo(() => ["all", ...Array.from(new Set(publicRegulations.map((item) => item.category))).sort((a, b) => (categoryRank.get(a) ?? categoryOrder.length) - (categoryRank.get(b) ?? categoryOrder.length) || a.localeCompare(b, "zh-CN"))], [publicRegulations]);
   const statusFiltered = useMemo(() => publicRegulations.filter((item) => activeTab === "all" || item.status === activeTab), [activeTab, publicRegulations]);
   const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "all" ? statusFiltered.length : statusFiltered.filter((regulation) => regulation.category === item).length])), [categories, statusFiltered]);
   const filtered = useMemo(() => statusFiltered.filter((item) => { const categoryMatch = category === "all" || item.category === category; const queryMatch = !query.trim() || (item.code + " " + item.title + " " + item.source + " " + item.category).toLowerCase().includes(query.toLowerCase().trim()); return categoryMatch && queryMatch; }), [category, query, statusFiltered]);
