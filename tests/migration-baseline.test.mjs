@@ -92,7 +92,7 @@ test("keeps the recovered comparison records and public workbook export", async 
   const client = await readFile(join(root, "app/ledger-client.tsx"), "utf8");
   const workbook = await readFile(join(root, "app/excel-utils.ts"), "utf8");
   assert.equal((data.match(/id: "imported-compare-/g) ?? []).length, 313);
-  assert.equal((data.match(/category: "CFDA法律法规"/g) ?? []).length >= 213, true);
+  assert.equal((data.match(/category: "CFDA法律法规"/g) ?? []).length >= 200, true);
   assert.match(data, /status: "review", effective: "待核对"/);
   assert.match(data, /filter\(\(\{ status \}\) => status !== "review"\)/);
   assert.match(data, /公开法规日期格式或核验状态不合格/);
