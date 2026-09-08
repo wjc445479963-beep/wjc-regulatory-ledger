@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { LAST_CHECKED, regulations, type Regulation, type Status } from "./regulations-data";
 import { downloadCsv, downloadRegulationsWorkbook, readSpreadsheet, type SpreadsheetRow } from "./excel-utils";
+import { categoryOrder as categoryOrderLogic, categoryRank as categoryRankLogic, compareRegulations as compareRegulationsLogic, compareRows as compareRowsLogic, normalizeCode as normalizeCodeLogic, validateComparisonInput as validateComparisonInputLogic, type CompareStatus } from "@/lib/regulation-logic";
 
 const statusMeta: Record<Status, { label: string; className: string; dot: string }> = {
   active: { label: "现行", className: "border-emerald-200 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
@@ -18,8 +19,8 @@ const statusMeta: Record<Status, { label: string; className: string; dot: string
   review: { label: "待核对", className: "border-violet-200 bg-violet-50 text-violet-700", dot: "bg-violet-500" },
 };
 
-type CompareStatus = "replace" | "upcoming" | "active" | "named" | "recognized" | "unmatched";
-type ComparisonRow = {
+/* Comparison behavior lives in lib/regulation-logic.ts; these fields extend its result for export provenance. */
+type ComparisonRowWithProvenance = {
   originalCode: string;
   originalTitle: string;
   originalVersion?: string;
@@ -41,71 +42,7 @@ type ComparisonRow = {
 const compareMeta: Record<CompareStatus, { label: string; className: string }> = {
   replace: { label: "需要替换", className: "border-red-200 bg-red-50 text-red-700" }, upcoming: { label: "即将实施", className: "border-amber-200 bg-amber-50 text-amber-700" }, active: { label: "现行", className: "border-emerald-200 bg-emerald-50 text-emerald-700" }, named: { label: "按名称识别", className: "border-violet-200 bg-violet-50 text-violet-700" }, recognized: { label: "已识别但未纳入主库", className: "border-cyan-200 bg-cyan-50 text-cyan-700" }, unmatched: { label: "未匹配", className: "border-slate-200 bg-slate-100 text-slate-600" },
 };
-const categoryOrder = [
-  "法规·监管基础",
-  "法规·注册管理",
-  "法规·分类命名",
-  "法规·质量体系",
-  "法规·生产管理",
-  "法规·生产经营",
-  "法规·经营管理",
-  "法规·标签说明书",
-  "法规·临床评价",
-  "法规·药械组合产品",
-  "法规·上市后",
-  "法规·检验管理",
-  "法规·行政管理",
-  "法规·专项指导原则",
-  "质量体系",
-  "风险管理",
-  "生物学评价",
-  "微生物与内毒素",
-  "灭菌",
-  "灭菌设备",
-  "洁净环境",
-  "检验方法",
-  "通用检验",
-  "包装",
-  "材料表征",
-  "材料与产品标准",
-  "无源植入物",
-  "动物源材料",
-  "药品与检验参考",
-  "国家标准",
-  "医疗器械标准",
-  "国际指南",
-  "国际标准",
-];
-const categoryRank = new Map(categoryOrder.map((category, index) => [category, index]));
-const statusRank: Record<Status, number> = { active: 0, upcoming: 1, replaced: 2, review: 3 };
-function compareRegulations(a: Regulation, b: Regulation) {
-  const categoryDifference = (categoryRank.get(a.category) ?? categoryOrder.length) - (categoryRank.get(b.category) ?? categoryOrder.length);
-  if (categoryDifference) return categoryDifference;
-  const statusDifference = statusRank[a.status] - statusRank[b.status];
-  if (statusDifference) return statusDifference;
-  const dateA = /^\d{4}-\d{2}-\d{2}$/.test(a.effective) ? a.effective : "9999-99-99";
-  const dateB = /^\d{4}-\d{2}-\d{2}$/.test(b.effective) ? b.effective : "9999-99-99";
-  const dateDifference = dateA.localeCompare(dateB);
-  if (dateDifference) return dateDifference;
-  return a.code.localeCompare(b.code, "zh-CN", { numeric: true }) || a.title.localeCompare(b.title, "zh-CN");
-}
-const replacementMap: Record<string, string> = { "GB/T16886.1-2011": "GB/T16886.1-2022", "GB/T16886.3-2008": "GB/T16886.3-2019", "GB/T16886.6-2015": "GB/T16886.6-2022", "GB/T16886.9-2017": "GB/T16886.9-2022", "GB/T16886.10-2017": "GB/T16886.10-2024", "GB/T16886.12-2017": "GB/T16886.12-2023", "GB/T16886.17-2005": "GB/T16886.17-2025", "GB/T19633.1-2015": "GB/T19633.1-2024", "GB/T19633.2-2015": "GB/T19633.2-2024", "GB/T19973.2-2018": "GB/T19973.2-2025", "GB50457-2008": "GB50457-2019", "GB/T1.1-2009": "GB/T1.1-2020", "ISO11607-2:2006": "ISO11607-2:2019", "2014年第9号通告": "2022年第8号通告", "2017年第75号": "2022年第12号通告", "2021年第60号": "2026年第53号公告", "2014年第12号": "2025年第19号公告", "2014年第13号": "2025年第19号公告", "2014年第14号": "2025年第19号公告", "2016年第133号": "2025年第19号公告", "2017年第170号": "2025年第19号公告", "2018年第94号": "2025年第19号公告", "2020年第61号": "2025年第19号公告", "2021年第71号": "2025年第19号公告", "2023年第33号": "2025年第19号公告" };
-const upcomingMap: Record<string, string> = { "GB/T16886.2-2011": "GB/T16886.2-2026", "GB/T14233.2-2005": "GB/T14233.2-2025", "GB/T16292-2010": "GB/T16292-2025", "GB/T16293-2010": "GB/T16293-2025", "GB/T16294-2010": "GB/T16294-2025" };
-
-function normalizeCode(value: string) {
-  let code = String(value ?? "").toUpperCase().trim().replace(/[（(）)【】\[\]：:，,]/g, "").replace(/[—–−－﹣]/g, "-").replace(/[／∕⁄]/g, "/");
-  code = code.replace(/^EN\s*(ISO|IEC)\s*/i, "$1").replace(/^(GB|YY)\s*[-/]?\s*T(?=\s*\d)/i, "$1/T").replace(/^(GB)\s*[-/]?\s*Z(?=\s*\d)/i, "$1/Z");
-  code = code.replace(/^(ISO|IEC)\s*(\d+(?:[-.]\d+)*)\s+(\d{4})$/, "$1$2:$3").replace(/\s+/g, "").replace(/^(GBT|GB-T)(?=\d)/, "GB/T").replace(/^(YYT|YY-T)(?=\d)/, "YY/T");
-  code = code.replace(/^(ISO|IEC)(\d+)-(\d{4})$/, "$1$2:$3");
-  return code;
-}
-const standardCodePattern = /(?:EN\s*)?(?:GB\s*\/?\s*[TZ]?|YY\s*\/?\s*T|ISO|IEC|ASTM|GHTF|JJF|JJG)\s*[-A-Z0-9./:～~]+(?:\s+\d{4})?/i;
-function extractStandardCode(value: string) { const match = String(value ?? "").replace(/[／∕⁄]/g, "/").match(standardCodePattern); return match?.[0]?.trim() ?? ""; }
-const documentCodePattern = /(?:[\u4e00-\u9fa5]{2,30}令第\s*\d+\s*号|(?:国)?食药监[\u4e00-\u9fa5]{0,8}[\[【〔]?\s*\d{4}\s*[\]】〕]?\s*\d+\s*号|[\u4e00-\u9fa5]{2,30}(?:公告|通知|通告)\s*\d{4}\s*年第\s*\d+\s*号|\d{4}\s*年第\s*\d+\s*号(?:公告|通知|通告)?)/i;
-function extractDocumentCode(value: string) { return String(value ?? "").match(documentCodePattern)?.[0]?.replace(/\s+/g, "").trim() ?? ""; }
 function getRowValue(row: SpreadsheetRow, terms: string[]) { const found = Object.entries(row).find(([key]) => terms.some((term) => key.toLowerCase().replace(/[\s_]/g, "").includes(term.toLowerCase()))); return found?.[1]?.trim() ?? ""; }
-function findCode(row: SpreadsheetRow) { const labeled = getRowValue(row, ["标准号", "标准编号", "法规编号", "文件编号", "文件号", "标准代号", "编号", "代号", "code", "standard"]); return extractStandardCode(labeled) || extractDocumentCode(labeled) || Object.values(row).map(extractStandardCode).find(Boolean) || Object.values(row).map(extractDocumentCode).find(Boolean) || ""; }
-function findTitle(row: SpreadsheetRow) { return getRowValue(row, ["文件名称", "法规名称", "标准名称", "文件名", "名称", "标题", "title"]) || Object.values(row).filter(Boolean).sort((a, b) => b.length - a.length)[0] || "未填写名称"; }
 function getComparisonInputMeta(row: SpreadsheetRow) {
   return {
     originalVersion: getRowValue(row, ["版本号", "版本", "版次", "version"]),
@@ -115,23 +52,12 @@ function getComparisonInputMeta(row: SpreadsheetRow) {
     originalNote: getRowValue(row, ["备注", "说明", "note"]),
   };
 }
-function normalizeTitle(value: string) { return String(value ?? "").toLowerCase().replace(/[\s、，。；：:（）()《》“”‘’'"「」『』—–-]/g, ""); }
-function sourceForCode(code: string) { const normalized = normalizeCode(code); if (/令第|公告|通知|通告/.test(code)) return { source: "国家药品监督管理局法规文件", href: "https://www.nmpa.gov.cn/directory/web/nmpa/ylqx/ylqxfgwj/index.html" }; if (/^(GB\/T|GB\/Z|GB)/.test(normalized)) return { source: "国家标准全文公开平台", href: `https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=${encodeURIComponent(code)}&p.p90=circulation_date&p.p91=desc` }; if (/^(YY\/T|YY)/.test(normalized)) return { source: "国家药品监督管理局医疗器械标准公告", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }; if (/^(ISO|IEC|ENISO)/.test(normalized)) return { source: "国际标准化组织（ISO）", href: `https://www.iso.org/search.html?q=${encodeURIComponent(code)}` }; if (/^ASTM/.test(normalized)) return { source: "ASTM官方标准检索", href: `https://www.astm.org/search.html#q=${encodeURIComponent(code)}` }; if (/^GHTF/.test(normalized)) return { source: "IMDRF/GHTF官方资料", href: "https://www.imdrf.org/documents" }; return { source: "国家药品监督管理局公开信息", href: "https://www.nmpa.gov.cn/ylqx/" }; }
-function sourceForTitle(title: string) { const normalized = normalizeTitle(title); if (normalized.includes("中国药典") || normalized.includes("药典")) return { source: "国家药典委员会药典数据库", href: "https://ydz.chp.org.cn/" }; if (normalized.includes("国务院") || normalized.includes("条例") || normalized.includes("办法") || normalized.includes("许可证") || normalized.includes("规范") || normalized.includes("指南") || normalized.includes("通知") || normalized.includes("公告") || normalized.includes("通告") || normalized.includes("令")) return { source: "国家药品监督管理局法规文件", href: "https://www.nmpa.gov.cn/directory/web/nmpa/ylqx/ylqxfgwj/index.html" }; if (normalized.includes("医疗器械") || normalized.includes("医用") || normalized.includes("消毒") || normalized.includes("灭菌") || normalized.includes("洁净")) return { source: "国家药品监督管理局公开信息", href: "https://www.nmpa.gov.cn/ylqx/" }; return { source: "官方公开信息入口", href: "https://www.nmpa.gov.cn/" }; }
-function normalizeHeader(value: string) { return value.toLowerCase().replace(/[\s_]/g, ""); }
-function validateComparisonInput(rows: SpreadsheetRow[]) {
-  const headers = Object.keys(rows[0] ?? {}).map(normalizeHeader);
-  if (headers.some((header) => ["比对结果", "参考标准号", "官方参考"].some((term) => header.includes(normalizeHeader(term))))) throw new Error("检测到这是比对结果文件，请上传原始文控清单或先下载标准模板填写。");
-  if (!headers.some((header) => ["标准号", "标准编号", "法规编号", "文件编号", "文件号", "standardno.", "standardno", "standardnumber", "code"].includes(header)) && !headers.some((header) => ["法规名称", "标准名称", "文件名称", "文件名", "名称", "标题", "regulationtitle", "standardtitle", "title"].includes(header))) throw new Error("请使用标准模板上传：至少包含“标准号”或“法规名称”列。没有编号的文件可以只填写名称。");
-  if (!headers.some((header) => ["法规名称", "标准名称", "文件名称", "文件名", "名称", "标题", "regulationtitle", "standardtitle", "title"].includes(header))) throw new Error("请使用标准模板上传：必须包含“法规名称”列。没有编号的文件也请填写文件名称。");
-}
-function compareRows(rows: SpreadsheetRow[], sourceRegulations: Regulation[] = regulations): ComparisonRow[] { return rows.map((row) => { const originalCode = findCode(row); const originalTitle = findTitle(row); const normalized = normalizeCode(originalCode); const titleKey = normalizeTitle(originalTitle); const replacementCode = replacementMap[normalized]; const upcomingCode = upcomingMap[normalized]; const direct = normalized ? sourceRegulations.find((item) => normalizeCode(item.code) === normalized) : undefined; const byTitle = !direct && titleKey.length >= 4 ? sourceRegulations.find((item) => { const referenceTitle = normalizeTitle(item.title); const exact = titleKey === referenceTitle; const strongPartial = titleKey.length >= 8 && referenceTitle.length >= 8 && (titleKey.includes(referenceTitle) || referenceTitle.includes(titleKey)); return referenceTitle.length >= 4 && (exact || strongPartial); }) : undefined; const replacementReference = replacementCode ? sourceRegulations.find((item) => normalizeCode(item.code) === replacementCode) : undefined; const upcomingReference = upcomingCode ? sourceRegulations.find((item) => normalizeCode(item.code) === upcomingCode) : undefined; const reference = replacementReference || upcomingReference || direct || byTitle; if (reference) { const result: CompareStatus = replacementReference || reference.status === "replaced" ? "replace" : upcomingReference || reference.status === "upcoming" ? "upcoming" : "active"; return { originalCode, originalTitle, result, referenceCode: reference.code, referenceTitle: reference.title, effective: reference.effective, source: reference.source, note: replacementCode ? `${originalCode} 已由 ${reference.code} 替代。` : upcomingCode ? `${originalCode} 将由 ${reference.code} 替代，实施日期为 ${reference.effective}。` : reference.note, href: reference.href }; } if (originalCode) { const source = sourceForCode(originalCode); return { originalCode, originalTitle, result: "recognized", referenceCode: originalCode, referenceTitle: originalTitle, effective: "—", source: source.source, note: "已识别文件编号，但该文件尚未纳入最新法规主库；系统不会臆测其现行状态。", href: source.href }; } if (originalTitle && originalTitle !== "未填写名称") { const source = sourceForTitle(originalTitle); return { originalCode, originalTitle, result: "named", referenceCode: "按名称识别", referenceTitle: originalTitle, effective: "—", source: source.source, note: "未提供编号，已按文件名称识别；如主库已有同名文件，将直接返回主库状态。", href: source.href }; } return { originalCode, originalTitle, result: "unmatched", referenceCode: "—", referenceTitle: "未识别文件", effective: "—", source: "—", note: "这一行没有可用的编号或文件名称。", href: "" }; }); }
 
-function addComparisonProvenance(rows: SpreadsheetRow[], sourceRegulations: Regulation[] = regulations): ComparisonRow[] {
-  return compareRows(rows, sourceRegulations).map((item, index) => {
+function addComparisonProvenance(rows: SpreadsheetRow[], sourceRegulations: Regulation[] = regulations): ComparisonRowWithProvenance[] {
+  return compareRowsLogic(rows, sourceRegulations).map((item, index) => {
     const inputMeta = getComparisonInputMeta(rows[index]);
-    const reference = sourceRegulations.find((regulation) => normalizeCode(regulation.code) === normalizeCode(item.referenceCode));
-    const sourceBasis = item.result === "replace" ? "替代版本映射" : item.result === "upcoming" ? "即将实施版本映射" : item.result === "active" ? (reference && normalizeCode(reference.code) === normalizeCode(item.originalCode) ? "标准号匹配" : "名称匹配") : item.result === "recognized" ? "编号识别，待人工确认" : item.result === "named" ? "名称识别，待人工确认" : "未匹配";
+    const reference = sourceRegulations.find((regulation) => normalizeCodeLogic(regulation.code) === normalizeCodeLogic(item.referenceCode));
+    const sourceBasis = item.result === "replace" ? "替代版本映射" : item.result === "upcoming" ? "即将实施版本映射" : item.result === "active" ? (reference && normalizeCodeLogic(reference.code) === normalizeCodeLogic(item.originalCode) ? "标准号匹配" : "名称匹配") : item.result === "recognized" ? "编号识别，待人工确认" : item.result === "named" ? "名称识别，待人工确认" : "未匹配";
     return {
       ...item,
       ...inputMeta,
@@ -144,16 +70,16 @@ function addComparisonProvenance(rows: SpreadsheetRow[], sourceRegulations: Regu
 }
 
 export default function LedgerClient() {
-  const [activeTab, setActiveTab] = useState("all"); const [category, setCategory] = useState("all"); const [query, setQuery] = useState(""); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState("20"); const [selected, setSelected] = useState<Regulation | null>(null); const [comparisonRows, setComparisonRows] = useState<ComparisonRow[]>([]); const [comparisonFilter, setComparisonFilter] = useState<CompareStatus | "all">("all"); const [uploadedName, setUploadedName] = useState(""); const [uploadError, setUploadError] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
-  const publicRegulations = useMemo(() => regulations.filter((item) => item.status !== "replaced" && item.status !== "review").sort(compareRegulations), []);
-  const categories = useMemo(() => ["all", ...Array.from(new Set(publicRegulations.map((item) => item.category))).sort((a, b) => (categoryRank.get(a) ?? categoryOrder.length) - (categoryRank.get(b) ?? categoryOrder.length) || a.localeCompare(b, "zh-CN"))], [publicRegulations]);
+  const [activeTab, setActiveTab] = useState("all"); const [category, setCategory] = useState("all"); const [query, setQuery] = useState(""); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState("20"); const [selected, setSelected] = useState<Regulation | null>(null); const [comparisonRows, setComparisonRows] = useState<ComparisonRowWithProvenance[]>([]); const [comparisonFilter, setComparisonFilter] = useState<CompareStatus | "all">("all"); const [uploadedName, setUploadedName] = useState(""); const [uploadError, setUploadError] = useState(""); const inputRef = useRef<HTMLInputElement>(null);
+  const publicRegulations = useMemo(() => regulations.filter((item) => item.status !== "replaced" && item.status !== "review").sort(compareRegulationsLogic), []);
+  const categories = useMemo(() => ["all", ...Array.from(new Set(publicRegulations.map((item) => item.category))).sort((a, b) => (categoryRankLogic.get(a) ?? categoryOrderLogic.length) - (categoryRankLogic.get(b) ?? categoryOrderLogic.length) || a.localeCompare(b, "zh-CN"))], [publicRegulations]);
   const statusFiltered = useMemo(() => publicRegulations.filter((item) => activeTab === "all" || item.status === activeTab), [activeTab, publicRegulations]);
   const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "all" ? statusFiltered.length : statusFiltered.filter((regulation) => regulation.category === item).length])), [categories, statusFiltered]);
   const filtered = useMemo(() => statusFiltered.filter((item) => { const categoryMatch = category === "all" || item.category === category; const queryMatch = !query.trim() || (item.code + " " + item.title + " " + item.source + " " + item.category).toLowerCase().includes(query.toLowerCase().trim()); return categoryMatch && queryMatch; }), [category, query, statusFiltered]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / Number(pageSize))); const currentPage = Math.min(page, totalPages); const pagedRegulations = useMemo(() => filtered.slice((currentPage - 1) * Number(pageSize), currentPage * Number(pageSize)), [currentPage, filtered, pageSize]);
   const counts = { active: publicRegulations.filter((item) => item.status === "active").length, upcoming: publicRegulations.filter((item) => item.status === "upcoming").length };
   const comparisonSummary = useMemo(() => ({ replace: comparisonRows.filter((item) => item.result === "replace").length, upcoming: comparisonRows.filter((item) => item.result === "upcoming").length, active: comparisonRows.filter((item) => item.result === "active").length, named: comparisonRows.filter((item) => item.result === "named").length, recognized: comparisonRows.filter((item) => item.result === "recognized").length, unmatched: comparisonRows.filter((item) => item.result === "unmatched").length }), [comparisonRows]);
-  async function handleFile(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; setUploadError(""); try { const parsed = await readSpreadsheet(file); if (!parsed.rows.length) throw new Error("文件中没有识别到可比对的数据行。"); validateComparisonInput(parsed.rows); setComparisonRows(addComparisonProvenance(parsed.rows, publicRegulations)); setComparisonFilter("all"); setUploadedName(file.name + " · " + parsed.sourceType + " · " + parsed.rows.length + " 条"); } catch (error) { setComparisonRows([]); setComparisonFilter("all"); setUploadedName(""); setUploadError(error instanceof Error ? error.message : "文件读取失败，请检查格式后重试。"); } finally { event.target.value = ""; } }
+  async function handleFile(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; setUploadError(""); try { const parsed = await readSpreadsheet(file); if (!parsed.rows.length) throw new Error("文件中没有识别到可比对的数据行。"); validateComparisonInputLogic(parsed.rows); setComparisonRows(addComparisonProvenance(parsed.rows, publicRegulations)); setComparisonFilter("all"); setUploadedName(file.name + " · " + parsed.sourceType + " · " + parsed.rows.length + " 条"); } catch (error) { setComparisonRows([]); setComparisonFilter("all"); setUploadedName(""); setUploadError(error instanceof Error ? error.message : "文件读取失败，请检查格式后重试。"); } finally { event.target.value = ""; } }
   function exportComparison() {
     downloadCsv("法规版本比对结果.csv", comparisonRows.map((item) => ({
       原清单标准号: item.originalCode,
@@ -187,7 +113,7 @@ export default function LedgerClient() {
   </div>;
 }
 
-function VersionCompare({ inputRef, onFile, rows, summary, filter, onFilter, uploadedName, uploadError, onExport, onClear }: { inputRef: RefObject<HTMLInputElement | null>; onFile: (event: ChangeEvent<HTMLInputElement>) => void; rows: ComparisonRow[]; summary: Record<CompareStatus, number>; filter: CompareStatus | "all"; onFilter: (filter: CompareStatus | "all") => void; uploadedName: string; uploadError: string; onExport: () => void; onClear: () => void }) {
+function VersionCompare({ inputRef, onFile, rows, summary, filter, onFilter, uploadedName, uploadError, onExport, onClear }: { inputRef: RefObject<HTMLInputElement | null>; onFile: (event: ChangeEvent<HTMLInputElement>) => void; rows: ComparisonRowWithProvenance[]; summary: Record<CompareStatus, number>; filter: CompareStatus | "all"; onFilter: (filter: CompareStatus | "all") => void; uploadedName: string; uploadError: string; onExport: () => void; onClear: () => void }) {
   const visibleRows = filter === "all" ? rows : rows.filter((item) => item.result === filter);
 
   return <section id="compare" className="rounded-2xl border border-[#d8e2f0] bg-white shadow-[0_8px_28px_rgba(16,33,61,0.05)]">
@@ -203,4 +129,4 @@ function VersionCompare({ inputRef, onFile, rows, summary, filter, onFilter, upl
 function CompareStat({ label, value, tone, active, onClick }: { label: string; value: number; tone: "red" | "amber" | "green" | "blue" | "gray"; active: boolean; onClick: () => void }) { const colors = { red: "border-red-100 bg-red-50 text-red-700", amber: "border-amber-100 bg-amber-50 text-amber-700", green: "border-emerald-100 bg-emerald-50 text-emerald-700", blue: "border-blue-100 bg-blue-50 text-blue-700", gray: "border-slate-200 bg-slate-50 text-slate-600" }; return <button type="button" onClick={onClick} aria-pressed={active} aria-label={`${label}：${value} 条，点击筛选`} className={`rounded-xl border px-3 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${colors[tone]} ${active ? "ring-2 ring-[#18345d]/30 ring-offset-2" : ""}`}><p className="text-xs opacity-80">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></button>; }
 function SummaryCard({ icon, label, value, caption, accent, onClick }: { icon: ReactNode; label: string; value: number; caption: string; accent: "blue" | "amber" | "review"; onClick?: () => void }) { const colors = { blue: "bg-blue-50 text-blue-700", amber: "bg-amber-50 text-amber-700", review: "bg-violet-50 text-violet-700" }; const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => { if (onClick && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onClick(); } }; return <div role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={handleKeyDown} className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_28px_rgba(16,33,61,0.03)] ${onClick ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md" : ""}`}><div className={`mb-5 flex size-10 items-center justify-center rounded-xl ${colors[accent]}`}>{icon}</div><div className="flex items-end justify-between gap-4"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-1 text-3xl font-semibold text-[#10213d]">{value}</p></div><p className="max-w-[150px] text-right text-xs leading-5 text-slate-400">{caption}</p></div></div>; }
 function SourceLink({ title, href }: { title: string; href: string }) { return <a href={href} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:bg-white/10 hover:text-white"><span>{title}</span><ArrowUpRight className="size-4 text-[#f3a19c]" /></a>; }
-function DetailPanel({ item, onClose }: { item: Regulation; onClose: () => void }) { const meta = statusMeta[item.status]; return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#071427]/35 p-0 backdrop-blur-[2px] md:items-center md:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><aside className="w-full max-w-2xl rounded-t-2xl bg-white p-6 shadow-2xl md:rounded-2xl md:p-8"><div className="flex items-start justify-between gap-5"><div><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-semibold text-[#d6534e]">{item.code}</span><Badge variant="outline" className={meta.className}>{meta.label}</Badge></div><h2 className="mt-4 text-2xl font-semibold leading-tight text-[#10213d]">{item.title}</h2></div><button onClick={onClose} className="text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="关闭">×</button></div><div className="mt-7 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2"><div><p className="text-xs text-slate-400">来源</p><p className="mt-1 text-sm font-medium text-slate-700">{item.source}</p></div><div><p className="text-xs text-slate-400">生效/关注日期</p><p className="mt-1 text-sm font-medium text-slate-700">{item.effective}</p></div></div><p className="mt-6 text-sm leading-7 text-slate-600">{item.note}</p><div className="mt-7 flex flex-wrap gap-3"><a href={item.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-[#e7655e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#d6534e]">打开官方来源 <ArrowUpRight className="size-4" /></a><Button variant="outline" onClick={onClose}>返回台账</Button></div></aside></div>; }
+function DetailPanel({ item, onClose }: { item: Regulation; onClose: () => void }) { const meta = statusMeta[item.status]; return <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[#071427]/35 p-0 backdrop-blur-[2px] md:items-center md:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><aside role="dialog" aria-modal="true" aria-labelledby="regulation-detail-title" className="max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-6 shadow-2xl md:max-h-[calc(100dvh-3rem)] md:rounded-2xl md:p-8"><div className="flex items-start justify-between gap-5"><div><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-semibold text-[#d6534e]">{item.code}</span><Badge variant="outline" className={meta.className}>{meta.label}</Badge></div><h2 id="regulation-detail-title" className="mt-4 text-2xl font-semibold leading-tight text-[#10213d]">{item.title}</h2></div><button onClick={onClose} className="text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="关闭">×</button></div><div className="mt-7 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2"><div><p className="text-xs text-slate-400">来源</p><p className="mt-1 text-sm font-medium text-slate-700">{item.source}</p></div><div><p className="text-xs text-slate-400">生效/关注日期</p><p className="mt-1 text-sm font-medium text-slate-700">{item.effective}</p></div></div><p className="mt-6 text-sm leading-7 text-slate-600">{item.note}</p><div className="mt-7 flex flex-wrap gap-3"><a href={item.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-[#e7655e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#d6534e]">打开官方来源 <ArrowUpRight className="size-4" /></a><Button variant="outline" onClick={onClose}>返回台账</Button></div></aside></div>; }

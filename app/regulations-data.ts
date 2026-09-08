@@ -13,11 +13,9 @@ export type Regulation = {
   href: string;
 };
 
-const CHECKED = "2026-09-04";
+const CHECKED = "2026-09-08";
 export const LAST_CHECKED = CHECKED;
-const NMPA = "https://www.nmpa.gov.cn/";
 const NMPA_RULES = "https://www.nmpa.gov.cn/xxgk/fgwj/index.html";
-const CMDE = "https://www.cmde.org.cn/";
 const STD = (keyword: string) => `https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=${encodeURIComponent(keyword)}&p.p90=circulation_date&p.p91=desc`;
 const SAMR = "国家标准全文公开平台";
 
@@ -39,11 +37,11 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
   "GB 9706.1-2020": "active",
   "GB/T 10247-2008": "active",
   "GB/T 14233.1-2022": "active",
-  "GB/T 14233.2-2005": "active",
+  "GB/T 14233.2-2005": "replaced",
   "GB/T 14233.3-2024": "upcoming",
-  "GB/T 16292-2010": "active",
-  "GB/T 16293-2010": "active",
-  "GB/T 16294-2010": "active",
+  "GB/T 16292-2010": "replaced",
+  "GB/T 16293-2010": "replaced",
+  "GB/T 16294-2010": "replaced",
   "GB/T 16292-2025": "upcoming",
   "GB/T 16293-2025": "upcoming",
   "GB/T 16294-2025": "upcoming",
@@ -162,9 +160,17 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
 };
 
 function item(input: Omit<Regulation, "updated">): Regulation {
-  const status = VERIFIED_STANDARD_STATUS[input.code] ?? input.status;
-  if ((status === "active" || status === "upcoming") && input.effective === "待核对") {
-    throw new Error(`公开法规不得出现“${status} / 待核对”：${input.code}`);
+  const candidateStatus = VERIFIED_STANDARD_STATUS[input.code] ?? input.status;
+  // Imported rows with only a generic placeholder note are not evidence of current validity.
+  // Keep them available for later review, but never publish them as current/upcoming.
+  const status = (candidateStatus === "active" || candidateStatus === "upcoming") && (input.effective === "待核对" || /已纳入最新法规主库|实施信息以官方来源页面为准/.test(input.note)) ? "review" : candidateStatus;
+  if (status === "active" || status === "upcoming") {
+    if (!/^(?:\d{4}-\d{2}(?:-\d{2})?|—)$/.test(input.effective)) {
+      throw new Error(`公开法规日期格式或核验状态不合格：${input.code} / ${input.effective}`);
+    }
+    if (!input.note.trim() || !/^https?:\/\//.test(input.href)) {
+      throw new Error(`公开法规必须包含说明和官方来源：${input.code}`);
+    }
   }
   return { ...input, status, updated: CHECKED };
 }
@@ -226,7 +232,7 @@ export const regulations: Regulation[] = [
   item({ id: "16886-14-2003", code: "GB/T 16886.14-2003", title: "医疗器械生物学评价 第14部分：陶瓷降解产物的定性与定量", source: SAMR, category: "生物学评价", status: "review", effective: "2003-08-01", note: "陶瓷材料医疗器械条件适用。", href: STD("GB/T 16886.14-2003") }),
   item({ id: "16886-15-2022", code: "GB/T 16886.15-2022", title: "医疗器械生物学评价 第15部分：金属与合金降解产物的定性与定量", source: SAMR, category: "生物学评价", status: "review", effective: "2024-01-01", note: "金属或合金材料存在降解产物时条件适用。", href: STD("GB/T 16886.15-2022") }),
   item({ id: "16886-16-2021", code: "GB/T 16886.16-2021", title: "医疗器械生物学评价 第16部分：降解产物与可沥滤物毒代动力学研究设计", source: SAMR, category: "生物学评价", status: "review", effective: "2022-12-01", note: "降解产物、可沥滤物需要毒代动力学研究时条件适用。", href: STD("GB/T 16886.16-2021") }),
-  item({ id: "16886-17-2025", code: "GB/T 16886.17-2025", title: "医疗器械生物学评价 第17部分：医疗器械成分的毒理学风险评估", source: SAMR, category: "生物学评价", status: "upcoming", effective: "2026-09-01", note: "已发布、即将实施；可用于医疗器械成分毒理学风险评估。", href: STD("GB/T 16886.17-2025") }),
+  item({ id: "16886-17-2025", code: "GB/T 16886.17-2025", title: "医疗器械生物学评价 第17部分：医疗器械成分的毒理学风险评估", source: SAMR, category: "生物学评价", status: "active", effective: "2026-09-01", note: "已于2026年9月1日起实施；可用于医疗器械成分毒理学风险评估。", href: "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=F0D674DE28DD68AEDF9A10E45CA7F445" }),
   item({ id: "16886-18-2022", code: "GB/T 16886.18-2022", title: "医疗器械生物学评价 第18部分：风险管理过程中医疗器械材料的化学表征", source: SAMR, category: "生物学评价", status: "review", effective: "2024-01-01", note: "材料组成、可提取物和可沥滤物的化学表征条件适用。", href: STD("GB/T 16886.18-2022") }),
   item({ id: "16886-19-2022", code: "GB/T 16886.19-2022", title: "医疗器械生物学评价 第19部分：材料物理化学、形态学和表面特性表征", source: SAMR, category: "生物学评价", status: "review", effective: "2024-01-01", note: "材料物理化学、形态学和表面特性可能影响生物学风险时条件适用。", href: STD("GB/T 16886.19-2022") }),
   item({ id: "16886-20-2015", code: "GB/T 16886.20-2015", title: "医疗器械生物学评价 第20部分：医疗器械免疫毒理学试验原则和方法", source: SAMR, category: "生物学评价", status: "review", effective: "2017-01-01", note: "存在免疫毒理学风险或相关评价需求时条件适用。", href: STD("GB/T 16886.20-2015") }),
@@ -239,7 +245,7 @@ export const regulations: Regulation[] = [
 
   // 材料、植入及动物源相关标准：保留，但按条件适用管理
   item({ id: "animal-44353-1", code: "GB/T 44353.1-2024", title: "动物源医疗器械 第1部分：风险管理应用", source: SAMR, category: "动物源材料", status: "review", effective: "2025-09-01", note: "仅在材料属于动物源或含动物源衍生物时适用。", href: STD("GB/T 44353.1-2024") }),
-  item({ id: "animal-44353-2", code: "GB/T 44353.2-2024", title: "动物源医疗器械 第2部分：来源、收集与处置的控制", source: SAMR, category: "动物源材料", status: "review", effective: "2025-09-01", note: "仅在材料属于动物源或含动物源衍生物时适用；已替代相关旧版来源控制标准。", href: STD("GB/T 44353.2-2024") }),
+  item({ id: "animal-44353-2", code: "GB/T 44353.2-2024", title: "动物源医疗器械 第2部分：来源、收集与处置的控制", source: SAMR, category: "动物源材料", status: "active", effective: "2025-09-01", note: "仅在材料属于动物源或含动物源衍生物时适用；已替代相关旧版来源控制标准。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=208E903AB65579F3E06397BE0A0AB2B9" }),
   item({ id: "animal-0771-3", code: "YY/T 0771.3-2009", title: "动物源医疗器械 第3部分：病毒和传播性海绵状脑病因子去除与灭活的确认", source: "国家药品监督管理局", category: "动物源材料", status: "review", effective: "2010-06-01", note: "动物源材料病毒/TSE风险控制条件适用。", href: NMPA_RULES }),
   item({ id: "animal-0771-4", code: "YY/T 0771.4-2015", title: "动物源医疗器械 第4部分：传播性海绵状脑病因子的去除和/或灭活及其过程确认分析原则", source: "国家药品监督管理局", category: "动物源材料", status: "review", effective: "2016-07-01", note: "动物源材料病毒/TSE风险控制条件适用。", href: NMPA_RULES }),
   item({ id: "passive-0640", code: "YY/T 0640-2016", title: "无源外科植入物 通用要求", source: "国家药品监督管理局", category: "无源植入物", status: "review", effective: "2017-06-01", note: "植入类产品条件适用；需结合产品结构和预期用途判断。", href: NMPA_RULES }),
@@ -300,9 +306,10 @@ export const regulations: Regulation[] = [
   item({ id: "added-yy-t-0870-1-2013", code: "YY/T 0870.1-2013", title: "医疗器械遗传毒性试验第1部分：细菌回复突变试验", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0870-2-2013", code: "YY/T 0870.2-2013", title: "医疗器械遗传毒性试验第2部分：体外哺乳动物染色体畸变实验", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0870-3-2013", code: "YY/T 0870.3-2013", title: "医疗器械遗传毒性试验第3部分：用小鼠淋巴瘤细胞进行的体外哺乳动物细胞基因突变试验", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
-  item({ id: "added-yy-t-0771-2-2009", code: "YY/T 0771.2-2009", title: "动物源医疗器械_第2部分_来源、收集与处置的控制", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
+  item({ id: "added-yy-t-0771-2-2009", code: "YY/T 0771.2-2009", title: "动物源医疗器械_第2部分_来源、收集与处置的控制", source: "国家药品监督管理局医疗器械标准公告", category: "历史版本", status: "replaced", effective: "—", note: "已被后续动物源医疗器械来源、收集与处置标准替代，不在公开现行库展示。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=BE1A99C24B3FCD55E05397BE0A0A0AA8" }),
   item({ id: "added-2010-133", code: "食药监办械[2010]133号", title: "关于印发医疗器械检测机构开展医疗器械产品标准预评价工作规定（试行）的通知", source: "国家药品监督管理局公开信息", category: "法规文件", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/ylqx/" }),
-  item({ id: "added-gb-t-19015-2008", code: "GB/T 19015-2008", title: "质量管理体系 质量计划指南", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2019015-2008&p.p90=circulation_date&p.p91=desc" }),
+  item({ id: "added-gb-t-19015-2008", code: "GB/T 19015-2008", title: "质量管理体系 质量计划指南", source: "国家标准全文公开平台", category: "历史版本", status: "replaced", effective: "—", note: "已由GB/T 19015-2021全部代替，不在公开现行库展示。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=BfDDlU10%2F8c%3D&mode=p" }),
+  item({ id: "gb-t-19015-2021", code: "GB/T 19015-2021", title: "质量管理 质量计划指南", source: "国家标准全文公开平台", category: "质量体系", status: "active", effective: "2021-12-01", note: "2021-08-20发布，2021-12-01实施，全部代替GB/T 19015-2008。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=BfDDlU10%2F8c%3D&mode=p" }),
   item({ id: "added-gb-t-1-1-2009", code: "GB/T 1.1-2009", title: "标准化工作导则 第1部分：标准的结构和编写", source: "国家标准全文公开平台", category: "国家标准", status: "replaced", effective: "2010-01-01", note: "已由GB/T 1.1-2020替代；保留在主库用于版本比对。", href: "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=570A95F33D8D3C7934933A900A78F133" }),
   item({ id: "added-gb-t-1-1-2020", code: "GB/T 1.1-2020", title: "标准化工作导则 第1部分：标准化文件的结构和起草规则", source: SAMR, category: "国家标准", status: "active", effective: "2020-10-01", note: "国家标准全文公开系统标示为现行。", href: "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=C4BFD981E993C417EF475F2A19B681F1" }),
   item({ id: "added-yy-t-0606-4-2007", code: "YY/T 0606.4-2007", title: "组织工程医疗产品 第4部分：皮肤替代品（物）的术语和分类", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
@@ -317,10 +324,12 @@ export const regulations: Regulation[] = [
   item({ id: "added-yy-t-0471-5-2004", code: "YY/T 0471.5-2004", title: "接触性创面敷料试验方法 第5部分-阻菌性", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0471-6-2004", code: "YY/T 0471.6-2004", title: "接触性创面敷料试验方法 第6部分气味控制", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0586-2005", code: "YY/T 0586-2005", title: "医用高分子制品 X射线不透性试验方法", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
-  item({ id: "added-gb-t-27025-2008", code: "GB/T 27025-2008", title: "检测和校准实验室能力的通用要求", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%20T%2027025-2008&p.p90=circulation_date&p.p91=desc" }),
+  item({ id: "added-gb-t-27025-2008", code: "GB/T 27025-2008", title: "检测和校准实验室能力的通用要求", source: "国家标准全文公开平台", category: "历史版本", status: "replaced", effective: "—", note: "已由GB/T 27025-2019全部代替，不在公开现行库展示。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=996A838ABFAF8372E05397BE0A0AD949" }),
+  item({ id: "gb-t-27025-2019", code: "GB/T 27025-2019", title: "检测和校准实验室能力的通用要求", source: "国家标准全文公开平台", category: "质量体系", status: "active", effective: "2020-07-01", note: "2019-12-10发布，2020-07-01实施，全部代替GB/T 27025-2008；官方复审结论为继续有效。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=996A838ABFAF8372E05397BE0A0AD949" }),
   item({ id: "added-iso-11607-2-2006", code: "ISO 11607-2:2006", title: "最终灭菌医疗器械的包装 第2部分：成型、密封和装配过程的确认要求", source: "国际标准化组织（ISO）", category: "国际标准", status: "replaced", effective: "—", note: "已由ISO 11607-2:2019替代；保留在主库用于版本比对。", href: "https://www.iso.org/standard/38713.html" }),
   item({ id: "added-iso-11607-2-2019", code: "ISO 11607-2:2019", title: "最终灭菌医疗器械的包装 第2部分：成型、密封和装配过程的确认要求", source: "国际标准化组织（ISO）", category: "国际标准", status: "active", effective: "2019-02", note: "ISO官方页面显示该版本当前有效。", href: "https://www.iso.org/standard/70800.html" }),
-  item({ id: "added-yy-t-0466-1-2016", code: "YY/T 0466.1-2016", title: "医疗器械 用于医疗器械标签、标记和提供信息的符号 第1部分：通用要求", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
+  item({ id: "added-yy-t-0466-1-2016", code: "YY/T 0466.1-2016", title: "医疗器械 用于医疗器械标签、标记和提供信息的符号 第1部分：通用要求", source: "国家药品监督管理局医疗器械标准公告", category: "历史版本", status: "replaced", effective: "—", note: "已由YY/T 0466.1-2023全部代替，不在公开现行库展示。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=05E9A95426D07056E06397BE0A0A1931" }),
+  item({ id: "yy-t-0466-1-2023", code: "YY/T 0466.1-2023", title: "医疗器械 用于制造商提供信息的符号 第1部分：通用要求", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "2025-09-15", note: "2023-09-05发布，2025-09-15实施，全部代替YY/T 0466.1-2016。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=05E9A95426D07056E06397BE0A0A1931" }),
   item({ id: "added-yy-t-0681-1-2018", code: "YY/T 0681.1-2018", title: "无菌医疗器械包装试验方法 第1部分：加速老化试验指南", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0681-2-2010", code: "YY/T 0681.2-2010", title: "无菌医疗器械包装试验方法 第2部分：软性屏障材料的密封强度", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-yy-t-0681-3-2010", code: "YY/T 0681.3-2010", title: "无菌医疗器械包装试验方法 第3部分：无约束包装抗内压破坏", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
@@ -342,11 +351,13 @@ export const regulations: Regulation[] = [
   item({ id: "added-yy-t-0698-7-2009", code: "YY/T 0698.7-2009", title: "环氧乙烷和辐照灭菌涂胶纸要求和测试方法", source: "国家药品监督管理局医疗器械标准公告", category: "医疗器械标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxhybzhgg/index.html" }),
   item({ id: "added-gb-19489-2008", code: "GB 19489-2008", title: "实验室 生物安全通用要求", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2019489-2008&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "added-gb4793-1-2007", code: "GB4793.1-2007", title: "测量、控制和实验室用电气设备安全通用要求", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB4793.1-2007&p.p90=circulation_date&p.p91=desc" }),
-  item({ id: "added-gb-50243-2002", code: "GB 50243-2002", title: "通风与空调工程施工质量验收规范", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2050243-2002&p.p90=circulation_date&p.p91=desc" }),
+  item({ id: "added-gb-50243-2002", code: "GB 50243-2002", title: "通风与空调工程施工质量验收规范", source: "住房和城乡建设部及国家标准公开信息", category: "历史版本", status: "replaced", effective: "—", note: "已由GB 50243-2016替代，不在公开现行库展示。", href: "https://www.zlglpt.com/book/book_view.aspx?id=71" }),
+  item({ id: "gb-50243-2016", code: "GB 50243-2016", title: "通风与空调工程施工质量验收规范", source: "住房和城乡建设部及国家标准公开信息", category: "国家标准", status: "active", effective: "2017-07-01", note: "自2017-07-01实施，原GB 50243-2002同时废止。", href: "https://www.zlglpt.com/book/book_view.aspx?id=71" }),
   item({ id: "added-gb-50346-2011", code: "GB 50346-2011", title: "生物安全实验室建筑技术规范", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2050346-2011&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "added-gb7231-2003", code: "GB7231-2003", title: "工业管道的基本识别色、识别符号和安全标识", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB7231-2003&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "added-gb-t-14710-2009", code: "GB/T 14710 2009", title: "医用电气环境要求及试验方法", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2014710%202009&p.p90=circulation_date&p.p91=desc" }),
-  item({ id: "added-gb-t-13554-2008", code: "GB/T 13554-2008", title: "高效空气过滤器", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2013554-2008&p.p90=circulation_date&p.p91=desc" }),
+  item({ id: "added-gb-t-13554-2008", code: "GB/T 13554-2008", title: "高效空气过滤器", source: "国家标准全文公开平台", category: "历史版本", status: "replaced", effective: "—", note: "已由GB/T 13554-2020替代，不在公开现行库展示。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2013554-2008&p.p90=circulation_date&p.p91=desc" }),
+  item({ id: "gb-t-13554-2020", code: "GB/T 13554-2020", title: "高效空气过滤器", source: "国家标准全文公开平台", category: "洁净环境", status: "active", effective: "2021-02-01", note: "2020-03-31发布，2021-02-01实施，替代GB/T 13554-2008。", href: "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=20DD54075DA2574DF6789D622789275A" }),
   item({ id: "added-iso-14644-1-7", code: "ISO 14644.1～7", title: "洁净室及相关受控环境国际标准（中文版）", source: "国际标准化组织（ISO）", category: "国际标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.iso.org/search.html?q=ISO%2014644.1%EF%BD%9E7" }),
   item({ id: "added-gb-t-21388-2008", code: "GB/T 21388-2008", title: "游标、带表和数显深度卡尺", source: "国家标准全文公开平台", category: "国家标准", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2021388-2008&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "added-jjf-1139-2005", code: "JJF 1139-2005", title: "计量器具检定周期确定原则和方法", source: "国家市场监督管理总局", category: "法规文件", status: "active", effective: "—", note: "已纳入最新法规主库；实施信息以官方来源页面为准。", href: "https://www.samr.gov.cn/" }),
@@ -384,6 +395,7 @@ export const regulations: Regulation[] = [
   item({ id: "iso-13485", code: "ISO 13485:2016", title: "Medical devices — Quality management systems — Requirements for regulatory purposes", source: "International Organization for Standardization", category: "国际标准", status: "review", effective: "—", note: "出口或采用国际质量体系框架时参考；中国境内体系要求以适用的中国法规和国家标准为准。", href: "https://www.iso.org/standard/59752.html" }),
   item({ id: "iso-14971", code: "ISO 14971:2019", title: "Medical devices — Application of risk management to medical devices", source: "International Organization for Standardization", category: "国际标准", status: "review", effective: "—", note: "国际风险管理标准，出口或客户要求时参考。", href: "https://www.iso.org/standard/72704.html" }),
   item({ id: "iso-10993-1", code: "ISO 10993-1:2018", title: "Biological evaluation of medical devices — Part 1: Requirements and general principles", source: "International Organization for Standardization", category: "国际标准", status: "review", effective: "—", note: "国际生物学评价框架，需结合目标市场法规使用。", href: "https://www.iso.org/standard/68936.html" }),
+  item({ id: "iso-10993-1-2025", code: "ISO 10993-1:2025", title: "Biological evaluation of medical devices — Part 1: Requirements and general principles for the evaluation of biological safety within a risk management process", source: "International Organization for Standardization", category: "国际标准", status: "active", effective: "2025-11", note: "ISO于2025年11月发布并撤回2018版；这是国际标准发布月份，不代表中国境内自动实施或替代对应中国标准。", href: "https://www.iso.org/standard/10993-1?browse=tc" }),
   item({ id: "iso-22442-1", code: "ISO 22442-1:2020", title: "Medical devices utilizing animal tissues and their derivatives — Part 1: Application of risk management", source: "International Organization for Standardization", category: "国际标准·动物源", status: "review", effective: "—", note: "动物源材料和衍生物条件适用。", href: "https://www.iso.org/standard/68429.html" }),
   item({ id: "iso-22442-2", code: "ISO 22442-2:2020", title: "Medical devices utilizing animal tissues and their derivatives — Part 2: Controls on sourcing, collection and handling", source: "International Organization for Standardization", category: "国际标准·动物源", status: "review", effective: "—", note: "动物源材料采购、收集和处理条件适用。", href: "https://www.iso.org/standard/68430.html" }),
   item({ id: "eu-mdr", code: "Regulation (EU) 2017/745", title: "Medical Device Regulation (MDR)", source: "European Union", category: "国际法规·欧盟", status: "review", effective: "2021-05-26", note: "仅在欧盟市场注册或出口时适用。", href: "https://eur-lex.europa.eu/eli/reg/2017/745/oj" }),
@@ -413,7 +425,7 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-017", code: "2014年第17号", title: "国家食品药品监督管理总局关于发布体外诊断试剂说明书编写指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-018", code: "2014年第18号", title: "国家食品药品监督管理总局关于发布禁止委托生产医疗器械目录的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-019", code: "2014年第58号", title: "国家食品药品监督管理总局关于施行医疗器械经营质量管理规范的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
-  item({ id: "imported-compare-020", code: "2014年第64号", title: "国家食品药品监督管理总局关于发布医疗器械生产质量管理规范的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
+  item({ id: "imported-compare-020", code: "2014年第64号", title: "国家食品药品监督管理总局关于发布医疗器械生产质量管理规范的公告", source: "国家药品监督管理局公开信息", category: "法规·质量体系", status: "active", effective: "—", note: "现行至2026年10月31日；2025年第107号公告规定新版自2026年11月1日起施行并同时废止本版。", href: "https://app.www.gov.cn/govdata/gov/202511/06/539701/article.html" }),
   item({ id: "imported-compare-021", code: "2015年第1号", title: "国家食品药品监督管理总局关于发布医疗器械生产企业供应商审核指南的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-022", code: "2015年第53号", title: "国家食品药品监督管理总局关于发布药品、医疗器械产品注册收费标准的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-023", code: "国家食品药品监督管理总局令第14号", title: "《药品医疗器械飞行检查办法》", source: "国家药品监督管理局法规文件", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/directory/web/nmpa/ylqx/ylqxfgwj/index.html" }),
@@ -696,7 +708,6 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-310", code: "EN ISO 22442-2 2015", title: "Medical devices utilizing animal tissues and their derivatives - Part 2 Controls on sourcing， collection and handling", source: "国际标准化组织（ISO）", category: "ISO", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.iso.org/search.html?q=EN%20ISO%2022442-2%202015" }),
   item({ id: "imported-compare-311", code: "EN ISO 22442-3 2007", title: "Medical devices utilizing animal tissues and their derivatives - Part 3 Validation of the elimination and or inactivation of viruses and transmissible spongiform encephalopathy (TSE) agents", source: "国际标准化组织（ISO）", category: "ISO", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.iso.org/search.html?q=EN%20ISO%2022442-3%202007" }),
   item({ id: "imported-compare-312", code: "ISO 11607-1 2019", title: "Packaging for terminally sterilized medical devices — Part 1: Requirements for materials, sterile barrier systems and packaging", source: "国际标准化组织（ISO）", category: "ISO", status: "active", effective: "2019-02", note: "ISO官网显示已发布且仍为现行版本；2023-09发布第1号修订。", href: "https://www.iso.org/standard/70799.html?browse=tc" }),
-  item({ id: "imported-compare-313", code: "ISO 11607-2 2019", title: "Packaging for terminally sterilized medical devices — Part 2: Validation requirements for forming, sealing and assembly processes", source: "国际标准化组织（ISO）", category: "ISO", status: "active", effective: "2019-02", note: "ISO官网显示已发布且仍为现行版本；2023-09发布第1号修订。", href: "https://www.iso.org/standard/70800.html?browse=tc" }),
   item({ id: "imported-compare-314", code: "ISO 11737-1 2018", title: "Sterilization of health care products — Microbiological methods — Part 1: Determination of a population of microorganisms on products", source: "国际标准化组织（ISO）", category: "ISO", status: "active", effective: "2018-01", note: "ISO官网显示已发布且仍为现行版本；当前处于修订跟踪中。", href: "https://www.iso.org/standard/66451.html" }),
   item({ id: "imported-compare-315", code: "ISO 13175-3 2012", title: "Implants for surgery — Calcium phosphates — Part 3 Hydroxyapatite and beta-tricalcium phosphate bone substitutes", source: "国际标准化组织（ISO）", category: "ISO", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.iso.org/search.html?q=ISO%2013175-3%202012" }),
   item({ id: "imported-compare-316", code: "ISO 13779-1 2008", title: "Implants for surgery - Hydroxyapatite - Part 1 Ceramic hydroxyapatite", source: "国际标准化组织（ISO）", category: "ISO", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.iso.org/search.html?q=ISO%2013779-1%202008" }),

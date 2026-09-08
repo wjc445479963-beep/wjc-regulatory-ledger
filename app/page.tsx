@@ -157,8 +157,8 @@ export default function Home() {
 
         <section id="modules" className="relative mt-20 scroll-mt-8 lg:mt-28">
           <div className="garden-vine garden-vine-side" aria-hidden="true"><Leaf className="size-8 rotate-[-35deg]" /><Leaf className="size-5 rotate-12" /></div>
-           <img src={sitePath("/garden-notes.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" />
-           <img src={sitePath("/garden-fireflies.png")} alt="" aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" />
+           <div aria-hidden="true" className="garden-accent garden-accent-image garden-accent-notes" style={{ backgroundImage: `url("${sitePath("/garden-notes.png")}")` }} />
+           <div aria-hidden="true" className="garden-accent garden-accent-image garden-accent-fireflies" style={{ backgroundImage: `url("${sitePath("/garden-fireflies.png")}")` }} />
            <picture className="garden-accent garden-accent-image garden-accent-path">
              <source media="(max-width: 1279px)" type="image/webp" srcSet={sitePath("/garden-arch-depth-mobile.webp")} />
              <source media="(max-width: 1279px)" srcSet={sitePath("/garden-arch-depth-mobile.png")} />

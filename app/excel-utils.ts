@@ -145,22 +145,38 @@ async function parseXlsx(buffer: ArrayBuffer) {
   const decoder = new TextDecoder("utf-8");
   const shared = files.get("xl/sharedStrings.xml");
   const sharedStrings = shared ? Array.from(new DOMParser().parseFromString(decoder.decode(shared), "application/xml").getElementsByTagName("si")).map(xmlText) : [];
-  const sheetName = [...files.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name)).sort()[0];
-  if (!sheetName) throw new Error("该 xlsx 文件中没有可读取的工作表。");
-  const document = new DOMParser().parseFromString(decoder.decode(files.get(sheetName)!), "application/xml");
-  const matrix = Array.from(document.getElementsByTagName("row")).map((row) => {
-    const cells: string[] = [];
-    Array.from(row.getElementsByTagName("c")).forEach((cell) => {
-      const reference = cell.getAttribute("r") ?? "";
-      const index = columnIndex(reference);
-      const type = cell.getAttribute("t");
-      const inline = cell.getElementsByTagName("is")[0];
-      const value = inline ? xmlText(inline) : cell.getElementsByTagName("v")[0]?.textContent ?? "";
-      cells[index] = type === "s" ? (sharedStrings[Number(value)] ?? value) : type === "b" ? (value === "1" ? "是" : "否") : value;
+  const workbook = files.get("xl/workbook.xml");
+  const relationships = files.get("xl/_rels/workbook.xml.rels");
+  if (!workbook || !relationships) throw new Error("该 xlsx 文件缺少工作表目录。");
+  const workbookDocument = new DOMParser().parseFromString(decoder.decode(workbook), "application/xml");
+  const relationshipDocument = new DOMParser().parseFromString(decoder.decode(relationships), "application/xml");
+  const relationshipMap = new Map(Array.from(relationshipDocument.getElementsByTagName("Relationship")).map((item) => [item.getAttribute("Id") ?? "", item.getAttribute("Target") ?? ""]));
+  const sheetDefinitions = Array.from(workbookDocument.getElementsByTagName("sheet")).map((sheet) => {
+    const target = relationshipMap.get(sheet.getAttribute("r:id") ?? "") ?? "";
+    const path = target.startsWith("/") ? target.slice(1) : target.startsWith("xl/") ? target : `xl/${target}`;
+    return { name: sheet.getAttribute("name") ?? "未命名工作表", path };
+  }).filter((sheet) => files.has(sheet.path));
+  if (!sheetDefinitions.length) throw new Error("该 xlsx 文件中没有可读取的工作表。");
+
+  const parseSheet = (sheet: { name: string; path: string }) => {
+    const document = new DOMParser().parseFromString(decoder.decode(files.get(sheet.path)!), "application/xml");
+    const matrix = Array.from(document.getElementsByTagName("row")).map((row) => {
+      const cells: string[] = [];
+      Array.from(row.getElementsByTagName("c")).forEach((cell) => {
+        const reference = cell.getAttribute("r") ?? "";
+        const index = columnIndex(reference);
+        const type = cell.getAttribute("t");
+        const inline = cell.getElementsByTagName("is")[0];
+        const value = inline ? xmlText(inline) : cell.getElementsByTagName("v")[0]?.textContent ?? "";
+        cells[index] = type === "s" ? (sharedStrings[Number(value)] ?? value) : type === "b" ? (value === "1" ? "是" : "否") : value;
+      });
+      return cells.map((cell) => cell ?? "");
     });
-    return cells.map((cell) => cell ?? "");
-  });
-  return rowsFromMatrix(matrix);
+    return { name: sheet.name, rows: rowsFromMatrix(matrix) };
+  };
+  const parsedSheets = sheetDefinitions.map(parseSheet);
+  const preferred = parsedSheets.find((sheet) => /CFDA|法规|标准|现行|即将实施/i.test(sheet.name)) ?? [...parsedSheets].sort((a, b) => b.rows.length - a.rows.length)[0];
+  return { rows: preferred.rows, sheetName: preferred.name, sheetNames: parsedSheets.map((sheet) => sheet.name) };
 }
 
 export async function readSpreadsheet(file: File) {
@@ -169,7 +185,9 @@ export async function readSpreadsheet(file: File) {
     return { rows: parseDelimited(decodeDelimitedText(await file.arrayBuffer())), sourceType: "CSV/GBK" };
   }
   if (name.endsWith(".xlsx")) {
-    return { rows: await parseXlsx(await file.arrayBuffer()), sourceType: "XLSX" };
+    const parsed = await parseXlsx(await file.arrayBuffer());
+    const sheetHint = parsed.sheetNames.length > 1 ? ` · 工作表：${parsed.sheetName}（共${parsed.sheetNames.length}个，优先选择法规/标准页）` : "";
+    return { rows: parsed.rows, sourceType: "XLSX" + sheetHint };
   }
   throw new Error("暂支持 .xlsx、.csv 或 .tsv；旧版 .xls 请先另存为 .xlsx。");
 }
@@ -177,7 +195,11 @@ export async function readSpreadsheet(file: File) {
 export function downloadCsv(filename: string, rows: SpreadsheetRow[]) {
   if (!rows.length) return;
   const headers = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const escape = (value: unknown) => {
+    const raw = String(value ?? "");
+    const safe = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
   const csv = `\uFEFF${[headers, ...rows.map((row) => headers.map((header) => row[header] ?? ""))].map((row) => row.map(escape).join(",")).join("\r\n")}`;
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
@@ -208,7 +230,7 @@ function exportStatusLabel(status: string) {
 
 function exportCategory(record: RegulationExportRecord) {
   const code = record.code.toUpperCase().replace(/\s+/g, "");
-  if (/^YY\/?T/.test(code)) return "YY";
+  if (/^YY(?:\/?T)?(?=\d)/.test(code)) return "YY";
   if (/^GB/.test(code)) return "GB";
   if (/^(ISO|IEC|ENISO)/.test(code)) return "ISO";
   if (/^ASTM/.test(code)) return "ASTM";
@@ -293,7 +315,7 @@ function zipStore(entries: Array<{ name: string; content: string }>) {
   endView.setUint16(10, entries.length, true);
   endView.setUint32(12, centralSize, true);
   endView.setUint32(16, localSize, true);
-  return new Blob([...localParts, ...centralParts, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return new Blob([...localParts, ...centralParts, end].map((part) => part as unknown as BlobPart), { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
 
 export function downloadRegulationsWorkbook(filename: string, records: RegulationExportRecord[]) {
@@ -306,7 +328,7 @@ export function downloadRegulationsWorkbook(filename: string, records: Regulatio
   const sheets = exportSheets.map((sheetName) => ({
     name: sheetName,
     rows: rowsFor(sheetName === "现行法规" ? currentRecords : sheetName === "即将实施" ? upcomingRecords : currentRecords.filter((record) => exportCategory(record) === sheetName)),
-  }));
+  })).filter((sheet) => sheet.rows.length > 1);
   const sheetEntries = sheets.map((sheet, index) => "<Override PartName=\"/xl/worksheets/sheet" + (index + 1) + ".xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>").join("");
   const sheetRelationships = sheets.map((_, index) => "<Relationship Id=\"rId" + (index + 1) + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet" + (index + 1) + ".xml\"/>").join("");
   const workbookSheets = sheets.map((sheet, index) => "<sheet name=\"" + xmlEscape(sheet.name) + "\" sheetId=\"" + (index + 1) + "\" r:id=\"rId" + (index + 1) + "\"/>").join("");
