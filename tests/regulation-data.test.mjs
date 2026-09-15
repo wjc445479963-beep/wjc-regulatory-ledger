@@ -23,7 +23,7 @@ const [{ regulations, LAST_CHECKED }, logic] = await Promise.all([
 test("公开法规只包含可发布状态并通过数据完整性校验", () => {
   const published = regulations.filter(({ status }) => status === "active" || status === "upcoming");
   assert.ok(published.length > 0);
-  assert.equal(published.length, 227, "发布基线变更时必须重新核对并更新测试基线");
+  assert.equal(published.length, 234, "发布基线变更时必须重新核对并更新测试基线");
   assert.ok(published.every(({ effective, note, href }) => /^(?:\d{4}-\d{2}(?:-\d{2})?|—)$/.test(effective) && note.trim() && /^https?:\/\//.test(href)));
   const vague = published.filter(({ note }) => /待核对|未识别|来源页面为准/.test(note));
   assert.equal(vague.length, 0, vague.map(({ code, note }) => `${code}: ${note}`).join(" | "));
@@ -31,7 +31,7 @@ test("公开法规只包含可发布状态并通过数据完整性校验", () =>
 });
 
 test("公开法规的状态日期和维护日期保持可审计", () => {
-  assert.match(LAST_CHECKED, /^2026-09-08$/);
+  assert.match(LAST_CHECKED, /^2026-09-15$/);
   const upcoming = regulations.filter(({ status }) => status === "upcoming");
   assert.ok(upcoming.every(({ effective }) => /^\d{4}-\d{2}(?:-\d{2})?$/.test(effective)), "即将实施法规必须有实施日期");
   assert.ok(regulations.every(({ updated }) => updated === LAST_CHECKED), "所有记录必须使用同一批次的最后核对日期");
@@ -93,6 +93,8 @@ test("关键版本替代关系不会把旧版误标为现行", () => {
     ["GB/T 16292-2010", "GB/T 16292-2025", "active", "upcoming"],
     ["GB/T 16293-2010", "GB/T 16293-2025", "active", "upcoming"],
     ["GB/T 16294-2010", "GB/T 16294-2025", "active", "upcoming"],
+    ["GB 18280.1-2015", "GB 18280.1-2025", "active", "upcoming"],
+    ["GB 18280.2-2015", "GB/T 18280.2-2025", "active", "upcoming"],
   ]) {
     assert.equal(byCode.get(logic.normalizeCode(oldCode))?.status, oldStatus, oldCode);
     assert.equal(byCode.get(logic.normalizeCode(newCode))?.status, newStatus, newCode);
@@ -105,6 +107,18 @@ test("关键版本替代关系不会把旧版误标为现行", () => {
     ["GB/T 6543-2025", "2025-12-01"],
   ]) {
     assert.equal(byCode.get(logic.normalizeCode(code))?.status, "active", code);
+    assert.equal(byCode.get(logic.normalizeCode(code))?.effective, effective, code);
+  }
+  for (const [code, status, effective] of [
+    ["GB/Z 130-2025", "active", "—"],
+    ["YY/T 0297-2026", "upcoming", "2027-03-01"],
+    ["GB 18280.1-2025", "upcoming", "2029-01-01"],
+    ["GB/T 18280.2-2025", "upcoming", "2027-07-01"],
+    ["GB/T 18280.3-2025", "upcoming", "2027-07-01"],
+    ["GB/T 47143-2026", "upcoming", "2027-08-01"],
+    ["GB/T 47144-2026", "upcoming", "2027-08-01"],
+  ]) {
+    assert.equal(byCode.get(logic.normalizeCode(code))?.status, status, code);
     assert.equal(byCode.get(logic.normalizeCode(code))?.effective, effective, code);
   }
 });

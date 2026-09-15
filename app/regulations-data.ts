@@ -13,7 +13,7 @@ export type Regulation = {
   href: string;
 };
 
-const CHECKED = "2026-09-08";
+const CHECKED = "2026-09-15";
 export const LAST_CHECKED = CHECKED;
 const NMPA_RULES = "https://www.nmpa.gov.cn/xxgk/fgwj/index.html";
 const STD = (keyword: string) => `https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=${encodeURIComponent(keyword)}&p.p90=circulation_date&p.p91=desc`;
@@ -32,6 +32,13 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
   "JJF 1101-2019": "active",
   "GB 18280.1-2015": "active",
   "GB 18280.2-2015": "active",
+  "GB 18280.1-2025": "upcoming",
+  "GB/T 18280.2-2025": "upcoming",
+  "GB/T 18280.3-2025": "upcoming",
+  "GB/T 47143-2026": "upcoming",
+  "GB/T 47144-2026": "upcoming",
+  "GB/Z 130-2025": "active",
+  "YY/T 0297-2026": "upcoming",
   "GB/T 30690-2014": "active",
   "GB/T 30690-2026": "upcoming",
   "GB 19335-2003": "replaced",
@@ -284,8 +291,13 @@ export const regulations: Regulation[] = [
   item({ id: "sterile-19973-2-new", code: "GB/T 19973.2-2025", title: "医疗产品灭菌 微生物学方法 第2部分：用于灭菌过程的定义、确认和维护的无菌试验", source: SAMR, category: "灭菌", status: "active", effective: "2026-02-01", note: "国家标准全文公开系统标示为现行。", href: STD("GB/T 19973.2-2025") }),
   item({ id: "sterile-19973-2", code: "GB/T 19973.2-2018", title: "医疗器械的灭菌 微生物学方法 第2部分：用于灭菌过程的定义、确认和维护的无菌试验", source: SAMR, category: "灭菌", status: "replaced", effective: "2019-04-01", note: "已由GB/T 19973.2-2025替代。", href: STD("GB/T 19973.2-2018") }),
   item({ id: "sterile-18279-2", code: "GB/T 18279.2-2015", title: "医疗保健产品灭菌 环氧乙烷 第2部分：灭菌过程应用指南", source: SAMR, category: "灭菌", status: "active", effective: "2017-07-01", note: "国家标准全文公开平台标示为现行；2015-12-10发布，2017-07-01实施。新版GB 18279-2023将于2026-10-01实施，届时替代相关旧版环氧乙烷灭菌要求。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=X%2BXzL%2BtVROA%3D&mode=p" }),
-  item({ id: "sterile-18280-1", code: "GB 18280.1-2015", title: "医疗保健产品灭菌 辐射 第1部分：灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时适用。", href: STD("GB 18280.1-2015") }),
-  item({ id: "sterile-18280-2", code: "GB 18280.2-2015", title: "医疗保健产品灭菌 辐射 第2部分：建立灭菌剂量", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时条件适用。", href: STD("GB 18280.2-2015") }),
+  item({ id: "sterile-18280-1", code: "GB 18280.1-2015", title: "医疗保健产品灭菌 辐射 第1部分：灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时适用；GB 18280.1-2025将于2029-01-01实施并全部替代本版。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=44F3E6F82041B68DE06397BE0A0A3836" }),
+  item({ id: "sterile-18280-1-new", code: "GB 18280.1-2025", title: "医疗产品灭菌 辐射 第1部分：医疗器械灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "upcoming", effective: "2029-01-01", note: "已发布，2029-01-01实施，全部替代GB 18280.1-2015；仅在采用辐射灭菌时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=44F3E6F82041B68DE06397BE0A0A3836" }),
+  item({ id: "sterile-18280-2", code: "GB 18280.2-2015", title: "医疗保健产品灭菌 辐射 第2部分：建立灭菌剂量", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时适用；GB/T 18280.2-2025将于2027-07-01实施并全部替代本版。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D80DFAD3A7E05397BE0A0AB82A" }),
+  item({ id: "sterile-18280-2-new", code: "GB/T 18280.2-2025", title: "医疗产品灭菌 辐射 第2部分：建立灭菌剂量", source: SAMR, category: "灭菌", status: "upcoming", effective: "2027-07-01", note: "已发布，2027-07-01实施，全部替代GB 18280.2-2015；仅在采用辐射灭菌时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=YkNIBw8AU3k%3D&mode=p" }),
+  item({ id: "sterile-18280-3-new", code: "GB/T 18280.3-2025", title: "医疗产品灭菌 辐射 第3部分：开发、确认和常规控制的剂量测量指南", source: SAMR, category: "灭菌", status: "upcoming", effective: "2027-07-01", note: "已发布，2027-07-01实施，全部替代GB/T 18280.3-2015；仅在采用辐射灭菌时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=4507EFE13CEDCB6AE06397BE0A0A601F" }),
+  item({ id: "sterile-47143-new", code: "GB/T 47143-2026", title: "医疗产品灭菌 低温汽化过氧化氢 医疗器械灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "upcoming", effective: "2027-08-01", note: "已发布，2027-08-01实施；仅在采用低温汽化过氧化氢灭菌工艺时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=49FD1852CB07C31FE06397BE0A0A1304" }),
+  item({ id: "sterile-47144-new", code: "GB/T 47144-2026", title: "医疗器械清洁过程的开发、确认和常规控制的要求", source: SAMR, category: "灭菌", status: "upcoming", effective: "2027-08-01", note: "已发布，2027-08-01实施；涉及医疗器械清洁过程开发、确认和常规控制时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=49FD1852CB0CC31FE06397BE0A0A1304" }),
   item({ id: "sterilizer-monitoring-30690-new", code: "GB/T 30690-2026", title: "小型压力蒸汽灭菌器灭菌效果监测方法和评价要求", source: SAMR, category: "灭菌设备", status: "upcoming", effective: "2027-02-01", note: "已发布，2027-02-01实施，全部代替GB/T 30690-2014；仅适用于小型压力蒸汽灭菌器。", href: STD("GB/T 30690-2026") }),
   item({ id: "sterilizer-monitoring-30690", code: "GB/T 30690-2014", title: "小型压力蒸汽灭菌器灭菌效果监测方法和评价要求", source: SAMR, category: "灭菌设备", status: "active", effective: "2015-07-01", note: "当前仍为现行版本；已发布新版GB/T 30690-2026，将于2027-02-01实施并替代本标准。", href: STD("GB/T 30690-2014") }),
   item({ id: "package-19633-1-new", code: "GB/T 19633.1-2024", title: "最终灭菌医疗器械包装 第1部分：材料、无菌屏障系统和包装系统的要求", source: SAMR, category: "包装", status: "active", effective: "2025-12-01", note: "国家标准全文公开系统标示为现行，已替代2015版。", href: STD("GB/T 19633.1-2024") }),
@@ -306,6 +318,10 @@ export const regulations: Regulation[] = [
   item({ id: "package-6543-new", code: "GB/T 6543-2025", title: "运输包装用单瓦楞纸箱和双瓦楞纸箱", source: SAMR, category: "包装", status: "active", effective: "2025-12-01", note: "国家标准全文公开平台标示为现行；2025-05-30发布，2025-12-01实施，全部代替GB/T 6543-2008。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=36DE96AA3EC3CD71E06397BE0A0A23D9" }),
   item({ id: "package-4857-3", code: "GB/T 4857.3-2008", title: "包装 运输包装件基本试验 第3部分：静载荷堆码试验方法", source: SAMR, category: "包装", status: "review", effective: "2009-01-01", note: "运输包装验证条件适用。", href: STD("GB/T 4857.3-2008") }),
   item({ id: "package-4857-5", code: "GB/T 4857.5-1992", title: "包装 运输包装件 跌落试验方法", source: SAMR, category: "包装", status: "review", effective: "1992-10-01", note: "运输包装验证条件适用。", href: STD("GB/T 4857.5-1992") }),
+
+  // 2026-09 周期维护：官方平台已发布、且属于现行或即将实施的通用监管文件。
+  item({ id: "post-market-surveillance-130-2025", code: "GB/Z 130-2025", title: "制造商对医疗器械的上市后监测", source: SAMR, category: "上市后监测", status: "active", effective: "—", note: "国家标准全文公开平台标示为现行；2025-12-03发布，适用于制造商建立和实施医疗器械上市后监测。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=457AEDAD75511B2DE06397BE0A0A6FCF" }),
+  item({ id: "clinical-trial-0297-2026", code: "YY/T 0297-2026", title: "医疗器械临床试验质量通用要求", source: "国家药品监督管理局", category: "法规·临床评价", status: "upcoming", effective: "2027-03-01", note: "已发布，2027-03-01实施，全部替代YY/T 0297-1997；适用于以注册为目的的医疗器械临床试验，不适用于体外诊断试剂。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=4F9E8148B9901F53E06397BE0A0A184B" }),
 
   // 主库补全：已识别并定位到官方来源的标准与指南，和现有记录共用同一主库
   item({ id: "added-yy-t-0466-2-2015", code: "YY/T 0466.2-2015", title: "医疗器械 用于医疗器械标签、标记和提供信息的符号 第2部分：符号的制订、选择和确认", source: SAMR, category: "医疗器械标准", status: "active", effective: "2016-01-01", note: "2015年3月2日发布，2016年1月1日实施；国家标准全文公开平台标示为现行。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailedCNF?id=F9976B450FCD0E9CE05397BE0A0A3BF6" }),

@@ -75,6 +75,7 @@ export const replacementMap: Record<string, string> = {
 export const upcomingMap: Record<string, string> = {
   "GB/T16886.2-2011": "GB/T16886.2-2026", "GB/T14233.2-2005": "GB/T14233.2-2025", "GB/T16292-2010": "GB/T16292-2025",
   "GB/T16293-2010": "GB/T16293-2025", "GB/T16294-2010": "GB/T16294-2025",
+  "GB18280.1-2015": "GB18280.1-2025", "GB18280.2-2015": "GBT18280.2-2025", "GBT18280.3-2015": "GBT18280.3-2025",
 };
 
 export function normalizeCode(value: string) {
