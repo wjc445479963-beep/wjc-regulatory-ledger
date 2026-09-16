@@ -23,7 +23,7 @@ const [{ regulations, LAST_CHECKED }, logic] = await Promise.all([
 test("公开法规只包含可发布状态并通过数据完整性校验", () => {
   const published = regulations.filter(({ status }) => status === "active" || status === "upcoming");
   assert.ok(published.length > 0);
-  assert.equal(published.length, 234, "发布基线变更时必须重新核对并更新测试基线");
+  assert.equal(published.length, 235, "发布基线变更时必须重新核对并更新测试基线");
   assert.ok(published.every(({ effective, note, href }) => /^(?:\d{4}-\d{2}(?:-\d{2})?|—)$/.test(effective) && note.trim() && /^https?:\/\//.test(href)));
   const vague = published.filter(({ note }) => /待核对|未识别|来源页面为准/.test(note));
   assert.equal(vague.length, 0, vague.map(({ code, note }) => `${code}: ${note}`).join(" | "));
@@ -31,7 +31,7 @@ test("公开法规只包含可发布状态并通过数据完整性校验", () =>
 });
 
 test("公开法规的状态日期和维护日期保持可审计", () => {
-  assert.match(LAST_CHECKED, /^2026-09-15$/);
+  assert.match(LAST_CHECKED, /^2026-09-16$/);
   const upcoming = regulations.filter(({ status }) => status === "upcoming");
   assert.ok(upcoming.every(({ effective }) => /^\d{4}-\d{2}(?:-\d{2})?$/.test(effective)), "即将实施法规必须有实施日期");
   assert.ok(regulations.every(({ updated }) => updated === LAST_CHECKED), "所有记录必须使用同一批次的最后核对日期");

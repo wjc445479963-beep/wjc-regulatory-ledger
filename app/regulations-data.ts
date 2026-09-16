@@ -13,7 +13,7 @@ export type Regulation = {
   href: string;
 };
 
-const CHECKED = "2026-09-15";
+const CHECKED = "2026-09-16";
 export const LAST_CHECKED = CHECKED;
 const NMPA_RULES = "https://www.nmpa.gov.cn/xxgk/fgwj/index.html";
 const STD = (keyword: string) => `https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=${encodeURIComponent(keyword)}&p.p90=circulation_date&p.p91=desc`;
@@ -227,6 +227,7 @@ export const regulations: Regulation[] = [
   item({ id: "cn-combination-review-2022-3", code: "2022年第3号通告", title: "以医疗器械作用为主的药械组合产品注册审查指导原则", source: "国家药品监督管理局", category: "法规·药械组合产品", status: "active", effective: "2022-01-11", note: "报告将产品描述为以医疗器械为主的药械组合产品时，应纳入该指导原则进行药物部分及整体注册资料策划。", href: "https://www.nmpa.gov.cn/xgk/ggtg/qtggtg/20220117145645132.html" }),
   item({ id: "cn-combination-release-review-2022-3", code: "2022年第3号通告·附件2", title: "以医疗器械作用为主的药械组合产品中药物定性定量及体外释放研究注册审查指导原则", source: "国家药品监督管理局", category: "法规·药械组合产品", status: "active", effective: "2022-01-11", note: "产品含药物或功能性药物成分时适用；若不含药物成分，应在适用性判断中说明不适用理由。", href: "https://www.nmpa.gov.cn/xgk/ggtg/qtggtg/20220117145645132.html" }),
   item({ id: "cn-gmp-2025", code: "2025年第107号", title: "医疗器械生产质量管理规范（2025年版）", source: "国家药品监督管理局", category: "法规·质量体系", status: "upcoming", effective: "2026-11-01", note: "新版已发布，2026年11月1日起实施；应提前开展差距分析和文件转换。", href: "https://english.nmpa.gov.cn/2025-11/07/c_1138713.htm" }),
+  item({ id: "cn-gmp-inspection-guideline-2026", code: "无文号", title: "医疗器械生产质量管理规范检查指导原则", source: "国家药品监督管理局", category: "法规·质量体系", status: "upcoming", effective: "2026-11-01", note: "2026年9月14日正式发布，2026年11月1日起施行；同时废止食药监械监〔2015〕218号《医疗器械生产质量管理规范现场检查指导原则》。", href: "https://www.nmpa.gov.cn/xxgk/fgwj/gzwj/gzwjylqx/20260915163938138.html" }),
   item({ id: "cn-technical-requirements", code: "2022年第8号通告", title: "医疗器械产品技术要求编写指导原则", source: "国家药品监督管理局", category: "法规·注册管理", status: "active", effective: "2022-02-08", note: "现行产品技术要求编写指导文件，适用于医疗器械产品注册或备案；报告及旧库中的2014年第9号通告应更新为本版。", href: "https://english.nmpa.gov.cn/2022-02/09/c_772368.htm" }),
   item({ id: "cn-udi", code: "2019年第66号公告", title: "医疗器械唯一标识系统规则", source: "国家药品监督管理局", category: "法规·上市后", status: "active", effective: "2019-10-01", note: "医疗器械唯一标识创建、赋码、数据提交和维护的基础规则；本产品如按第三类管理，应结合已实施批次核对UDI要求。", href: "https://udi.nmpa.gov.cn/" }),
   item({ id: "cn-udi-special-2026-15", code: "2026年第15号公告", title: "国家药监局关于特定情形实施医疗器械唯一标识有关事项的公告", source: "国家药品监督管理局医疗器械唯一标识数据库", category: "法规·上市后", status: "active", effective: "2026-01-23", note: "明确特定包装、组合包、独立软件等情形的UDI豁免或实施方式；13-XX植入医疗器械相关情形需特别核对。", href: "https://udi.nmpa.gov.cn/toDetail.html?CatalogId=2&infoId=81" }),
