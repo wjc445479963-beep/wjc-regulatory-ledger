@@ -31,10 +31,14 @@ test("公开法规只包含可发布状态并通过数据完整性校验", () =>
 });
 
 test("公开法规的状态日期和维护日期保持可审计", () => {
-  assert.match(LAST_CHECKED, /^2026-09-16$/);
+  assert.match(LAST_CHECKED, /^2026-09-25$/);
   const upcoming = regulations.filter(({ status }) => status === "upcoming");
   assert.ok(upcoming.every(({ effective }) => /^\d{4}-\d{2}(?:-\d{2})?$/.test(effective)), "即将实施法规必须有实施日期");
   assert.ok(regulations.every(({ updated }) => updated === LAST_CHECKED), "所有记录必须使用同一批次的最后核对日期");
+  const gmpGuideline = regulations.find(({ id }) => id === "cn-gmp-inspection-guideline-2026");
+  assert.equal(gmpGuideline?.code, "国药监械管〔2026〕14号");
+  assert.equal(gmpGuideline?.status, "upcoming");
+  assert.equal(gmpGuideline?.effective, "2026-11-01");
 });
 
 test("关键版本替代关系不会把旧版误标为现行", () => {
