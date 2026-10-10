@@ -23,7 +23,7 @@ const [{ regulations, LAST_CHECKED }, logic] = await Promise.all([
 test("公开法规只包含可发布状态并通过数据完整性校验", () => {
   const published = regulations.filter(({ status }) => status === "active" || status === "upcoming");
   assert.ok(published.length > 0);
-  assert.equal(published.length, 247, "发布基线变更时必须重新核对并更新测试基线");
+  assert.equal(published.length, 282, "发布基线变更时必须重新核对并更新测试基线");
   assert.ok(published.every(({ effective, note, href }) => /^(?:\d{4}-\d{2}(?:-\d{2})?|—)$/.test(effective) && note.trim() && /^https?:\/\//.test(href)));
   const vague = published.filter(({ note }) => /待核对|未识别|来源页面为准/.test(note));
   assert.equal(vague.length, 0, vague.map(({ code, note }) => `${code}: ${note}`).join(" | "));
@@ -36,7 +36,7 @@ test("公开法规的状态日期和维护日期保持可审计", () => {
   assert.ok(upcoming.every(({ effective }) => /^\d{4}-\d{2}(?:-\d{2})?$/.test(effective)), "即将实施法规必须有实施日期");
   assert.ok(regulations.every(({ updated }) => /^\d{4}-\d{2}-\d{2}$/.test(updated)), "逐条核验日期必须可审计");
   const supplemented = regulations.filter(({ updated }) => updated === "2026-10-10");
-  assert.equal(supplemented.length, 18, "14条胶原专项、3条环氧乙烷版本及1条UDI记录更新逐条日期");
+  assert.equal(supplemented.length, 56, "18条原增量记录、35条器审中心补漏及3条既有记录更新逐条日期");
   assert.ok(regulations.filter(({ updated }) => updated !== "2026-10-10").every(({ updated }) => updated === "2026-09-25"), "未重新核验的记录不得冒用增量维护日期");
   const gmpGuideline = regulations.find(({ id }) => id === "cn-gmp-inspection-guideline-2026");
   assert.equal(gmpGuideline?.code, "国药监械管〔2026〕14号");

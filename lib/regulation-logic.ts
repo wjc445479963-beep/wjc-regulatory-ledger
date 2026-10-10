@@ -8,6 +8,7 @@ export type RegulationLike = {
   updated: string;
   note: string;
   href: string;
+  relatedDocuments?: { title: string; href: string }[];
 };
 
 export type SpreadsheetRow = Record<string, string>;
@@ -104,10 +105,12 @@ export function normalizeCode(value: string) {
 const standardCodePattern = /(?:EN\s*)?(?:GB\s*\/?\s*[TZ]?|YY\s*\/?\s*T?|ISO|IEC|ASTM|GHTF|JJF|JJG)\s*[-A-Z0-9./:~～]+/i;
 export function extractStandardCode(value: string) {
   const normalizedText = String(value ?? "").replace(/[／∕⁄]/g, "/").replace(/[：]/g, ":").replace(/[—–−－﹣]/g, "-");
+  const isoWithYear = normalizedText.match(/(?:EN\s*)?(?:ISO|IEC)\s*\d+(?:[-.]\d+)*(?:\s*:\s*|\s+|-)\d{4}(?:\b|$)/i);
+  if (isoWithYear) return isoWithYear[0].trim();
   return normalizedText.match(standardCodePattern)?.[0]?.trim() ?? "";
 }
 
-const documentCodePattern = /(?:[\u4e00-\u9fa5]{2,30}令第\s*\d+\s*号|[\u4e00-\u9fa5]{2,30}[〔\[【]\s*\d{4}\s*[〕\]】]\s*\d+\s*号|(?:国)?食药监[\u4e00-\u9fa5]{0,8}[\[【〔]?\s*\d{4}\s*[\]】〕]?\s*\d+\s*号|[\u4e00-\u9fa5]{2,30}(?:公告|通知|通告)\s*\d{4}\s*年第\s*\d+\s*号|\d{4}\s*年第\s*\d+\s*号(?:公告|通知|通告)?)/i;
+const documentCodePattern = /(?:[\u4e00-\u9fa5]{2,30}(?:[、，,][\u4e00-\u9fa5]{2,30})*令第\s*\d+\s*号|[\u4e00-\u9fa5]{2,30}[〔\[【]\s*\d{4}\s*[〕\]】]\s*\d+\s*号|(?:国)?食药监[\u4e00-\u9fa5]{0,8}[\[【〔]?\s*\d{4}\s*[\]】〕]?\s*\d+\s*号|[\u4e00-\u9fa5]{2,30}(?:公告|通知|通告)\s*\d{4}\s*年第\s*\d+\s*号|(?:国家药监局器审中心|器审中心|国家药监局|原食药监总局|国家食品药品监督管理总局)?\s*\d{4}\s*年第\s*\d+\s*号(?:公告|通知|通告)?)(?:\s*[·•]\s*(?:附件\s*\d+|医疗器械附件))?/i;
 export function extractDocumentCode(value: string) { return String(value ?? "").match(documentCodePattern)?.[0]?.replace(/\s+/g, "").trim() ?? ""; }
 
 function normalizeHeader(value: string) { return value.toLowerCase().replace(/[\s_]/g, ""); }
@@ -122,6 +125,21 @@ export function findCode(row: SpreadsheetRow) {
 }
 export function findTitle(row: SpreadsheetRow) { return getRowValue(row, ["文件名称", "法规名称", "标准名称", "文件名", "名称", "标题", "title"]) || Object.values(row).filter(Boolean).sort((a, b) => b.length - a.length)[0] || "未填写名称"; }
 function normalizeTitle(value: string) { return String(value ?? "").toLowerCase().replace(/[\s、，。；：:（）()《》“”‘’'「」『』—–-]/g, ""); }
+export function regulationSearchText(item: RegulationLike) {
+  return [item.code, item.title, item.source, item.category, ...(item.relatedDocuments ?? []).map(({ title }) => title)].join(" ").toLowerCase();
+}
+function titleMatches(input: string, title: string) {
+  if (/征求意见|草案|报批稿|送审稿/.test(input)) return false;
+  const reference = normalizeTitle(title);
+  return input.length >= 8 && reference.length >= 8 && (input === reference || input.includes(reference) || reference.includes(input));
+}
+function documentIdentity(code: string, source = "") {
+  const normalized = normalizeCode(code);
+  const number = normalized.match(/(\d{4})年第(\d+)号/);
+  if (!number) return undefined;
+  const issuer = /器审中心|医疗器械技术审评中心/.test(normalized + source) ? "cmde" : /国家药监局|国家药品监督管理局|食药监总局|食品药品监督管理总局/.test(normalized + source) ? "nmpa" : "";
+  return { number: `${number[1]}-${Number(number[2])}`, issuer, kind: normalized.match(/号(公告|通告|通知)/)?.[1] ?? "", annex: normalized.match(/[·•](.+)$/)?.[1] ?? "" };
+}
 function sourceForCode(code: string) {
   const normalized = normalizeCode(code);
   if (/令第|公告|通知|通告|〔/.test(code)) return { source: "国家药品监督管理局法规文件", href: "https://www.nmpa.gov.cn/directory/web/nmpa/ylqx/ylqxfgwj/index.html" };
@@ -150,19 +168,29 @@ export function compareRows(rows: SpreadsheetRow[], sourceRegulations: Regulatio
     const normalized = normalizeCode(originalCode);
     const replacementCode = mappedCode(normalized, replacementMap);
     const upcomingCode = mappedCode(normalized, upcomingMap);
-    const direct = normalized ? sourceRegulations.find((item) => normalizeCode(item.code) === normalized) : undefined;
-    const byTitle = !originalCode ? sourceRegulations.find((item) => {
-      const inputTitle = normalizeTitle(originalTitle); const referenceTitle = normalizeTitle(item.title);
-      return inputTitle.length >= 8 && referenceTitle.length >= 8 && (inputTitle === referenceTitle || inputTitle.includes(referenceTitle) || referenceTitle.includes(inputTitle));
-    }) : undefined;
+    const identity = documentIdentity(originalCode);
+    const inputTitle = normalizeTitle(originalTitle);
+    const candidates = identity ? sourceRegulations.filter((item) => {
+      const candidate = documentIdentity(item.code, item.source);
+      return candidate && candidate.number === identity.number && (!identity.issuer || candidate.issuer === identity.issuer) && (!identity.kind || candidate.kind === identity.kind) && (!identity.annex || candidate.annex === identity.annex);
+    }) : [];
+    // 同文号不同机构/附件不能按第一个命中判现行；名称只能在同一文件身份范围内消歧。
+    const titleCandidates = (identity ? candidates : !originalCode ? sourceRegulations : []).filter((item) => titleMatches(inputTitle, item.title) || item.relatedDocuments?.some(({ title }) => titleMatches(inputTitle, title)));
+    const exactTitleCandidates = titleCandidates.filter((item) => normalizeTitle(item.title) === inputTitle || item.relatedDocuments?.some(({ title }) => normalizeTitle(title) === inputTitle));
+    const byTitle = exactTitleCandidates.length === 1 ? exactTitleCandidates[0] : titleCandidates.length === 1 ? titleCandidates[0] : undefined;
+    const direct = identity
+      ? candidates.length === 1 && (identity.annex || !documentIdentity(candidates[0].code)?.annex) ? candidates[0] : undefined
+      : normalized ? sourceRegulations.find((item) => normalizeCode(item.code) === normalized) : undefined;
     const replacementReference = replacementCode ? sourceRegulations.find((item) => normalizeCode(item.code) === replacementCode) : undefined;
     const upcomingReference = upcomingCode ? sourceRegulations.find((item) => normalizeCode(item.code) === upcomingCode) : undefined;
-    const reference = replacementReference || upcomingReference || direct || byTitle;
+    const isDraft = /征求意见|草案|报批稿|送审稿/.test(originalTitle);
+    const reference = isDraft ? undefined : replacementReference || upcomingReference || (identity ? byTitle || direct : direct || byTitle);
     if (reference) {
       const result: CompareStatus = replacementReference ? "replace" : upcomingReference || reference.status === "upcoming" ? "upcoming" : reference.status === "active" ? "active" : "recognized";
-      return { originalCode, originalTitle, result, referenceCode: reference.code, referenceTitle: reference.title, effective: reference.effective, source: reference.source, note: replacementReference ? `${originalCode} 已由 ${reference.code} 替代。` : upcomingReference ? `${originalCode} 将由 ${reference.code} 替代，实施日期为 ${reference.effective}。` : reference.note, href: reference.href };
+      const related = reference.relatedDocuments?.find(({ title }) => normalizeTitle(title) === inputTitle);
+      return { originalCode, originalTitle, result, referenceCode: reference.code, referenceTitle: related?.title ?? reference.title, effective: reference.effective, source: reference.source, note: replacementReference ? `${originalCode} 已由 ${reference.code} 替代。` : upcomingReference ? `${originalCode} 将由 ${reference.code} 替代，实施日期为 ${reference.effective}。` : reference.note, href: related?.href ?? reference.href };
     }
-    if (originalCode) { const source = sourceForCode(originalCode); return { originalCode, originalTitle, result: "recognized", referenceCode: originalCode, referenceTitle: originalTitle, effective: "—", source: source.source, note: "已识别文件编号，但该文件尚未纳入最新法规主库；系统不会臆测其现行状态。", href: source.href }; }
+    if (originalCode) { const source = sourceForCode(originalCode); return { originalCode, originalTitle, result: "recognized", referenceCode: originalCode, referenceTitle: originalTitle, effective: "—", source: source.source, note: isDraft ? "原文件名称明确为征求意见或草案，不因文号或同名正式文件匹配而认定现行。" : candidates.length > 0 ? "该文号存在机构或附件区分，请补充发布机构、完整文件名称及附件号后确认；系统不会按裸文号猜测现行状态。" : "已识别文件编号，但该文件尚未纳入最新法规主库；系统不会臆测其现行状态。", href: source.href }; }
     if (originalTitle !== "未填写名称") { const source = sourceForTitle(originalTitle); return { originalCode, originalTitle, result: "named", referenceCode: "按名称识别", referenceTitle: originalTitle, effective: "—", source: source.source, note: "未提供编号，只能按名称给出候选结果；请人工确认后再纳入受控清单。", href: source.href }; }
     return { originalCode, originalTitle, result: "unmatched", referenceCode: "—", referenceTitle: "未识别文件", effective: "—", source: "—", note: "这一行没有可用的编号或文件名称。", href: "" };
   });
