@@ -14,7 +14,11 @@ export type Regulation = {
 };
 
 const CHECKED = "2026-09-25";
-export const LAST_CHECKED = CHECKED;
+// 页面显示最近维护日；逐条核验日期仍保留各自证据批次，不能把增量维护冒充全库重核。
+export const LAST_CHECKED = "2026-10-10";
+const MAINTENANCE_CHECKED = "2026-10-10";
+// 本次为胶原蛋白专项补充，不把未重新核验的全库记录统一改为今天。
+const COLLAGEN_CHECKED = "2026-10-10";
 const NMPA_RULES = "https://www.nmpa.gov.cn/xxgk/fgwj/index.html";
 const STD = (keyword: string) => `https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=${encodeURIComponent(keyword)}&p.p90=circulation_date&p.p91=desc`;
 const SAMR = "国家标准全文公开平台";
@@ -137,8 +141,8 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
   "ASTM D934-13": "replaced",
   "ASTM F1185-03": "replaced",
   "GB 18279-2001": "replaced",
-  "GB 18279.1-2015": "active",
-  "GB 18279-2023": "upcoming",
+  "GB 18279.1-2015": "replaced",
+  "GB 18279-2023": "active",
   "GB 4234-2015": "replaced",
   "GB 4234.1-2017": "active",
   "GB 4234.1-2026": "upcoming",
@@ -150,7 +154,7 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
   "GB 19082-2009": "replaced",
   "GB 19083-2010": "replaced",
   "GB/T 6543-2008": "replaced",
-  "GB/T 18279.2-2015": "active",
+  "GB/T 18279.2-2015": "replaced",
   "YY 0505-2012": "replaced",
   "YY/T 0308-2015": "active",
   "YY/T 0313-2014": "active",
@@ -172,7 +176,7 @@ const VERIFIED_STANDARD_STATUS: Record<string, Extract<Status, "active" | "upcom
   "YY/T 1571-2017": "active",
 };
 
-function item(input: Omit<Regulation, "updated">): Regulation {
+function item(input: Omit<Regulation, "updated"> & { updated?: string }): Regulation {
   const candidateStatus = VERIFIED_STANDARD_STATUS[input.code] ?? input.status;
   const hasVerifiedCode = Boolean(VERIFIED_STANDARD_STATUS[input.code]);
   // A verified status map is the result of the standard-number lookup pass.  Do not
@@ -191,10 +195,22 @@ function item(input: Omit<Regulation, "updated">): Regulation {
       throw new Error(`公开法规必须包含说明和官方来源：${input.code}`);
     }
   }
-  return { ...input, status, note, updated: CHECKED };
+  return { ...input, status, note, updated: input.updated ?? CHECKED };
 }
 
 export const regulations: Regulation[] = [
+  // 2026-10-10 胶原蛋白专项核验：原料、检测方法和产品标准按适用范围区分。
+  item({ id: "collagen-0954-2015", code: "YY/T 0954-2015", title: "无源外科植入物-I型胶原蛋白植入剂", source: "全国标准信息公共服务平台、国家药监局发布公告", category: "无源植入物", status: "active", effective: "2017-01-01", updated: COLLAGEN_CHECKED, note: "现行；2027-03-01由YY/T 0954-2026全部替代。适用于以纯化、非交联I型胶原蛋白制备的注射型植入剂。原编号YY 0954-2015，根据2019年第106号公告转为推荐性。实施日期按2015年第8号原强制性标准发布公告取2017-01-01；标准平台备案页列2016-01-01，与原公告有差异，不能将强转推后的编号用于倒推原实施日期。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=F9976B450FDB0E9CE05397BE0A0A3BF6" }),
+  item({ id: "collagen-0954-2026", code: "YY/T 0954-2026", title: "无源外科植入物 I型胶原蛋白植入剂", source: "全国标准信息公共服务平台", category: "无源植入物", status: "upcoming", effective: "2027-03-01", updated: COLLAGEN_CHECKED, note: "2026-03-09发布，2027-03-01实施并全部替代YY/T 0954-2015；实施前旧版仍现行。适用于组织提取、纯化I型胶原蛋白的注射植入剂，不直接套用于重组胶原蛋白或仅含透明质酸的产品。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=4F9E8148B9971F53E06397BE0A0A184B" }),
+  item({ id: "collagen-1805-2", code: "YY/T 1805.2-2021", title: "组织工程医疗器械产品 胶原蛋白 第2部分：I型胶原蛋白分子量检测-十二烷基硫酸钠聚丙烯酰胺凝胶电泳法", source: "全国标准信息公共服务平台", category: "材料表征", status: "active", effective: "2022-09-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2021-09-06发布，2022-09-01实施。适用于组织提取I型胶原蛋白原材料的分子量测定；其他类型或重组胶原蛋白有相应对照品时可参考，不能代替产品全部性能要求。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=D7B65558A8A895E0E05397BE0A0AEA40" }),
+  item({ id: "collagen-1805-3", code: "YY/T 1805.3-2022", title: "组织工程医疗器械产品 胶原蛋白 第3部分：基于特征多肽测定的胶原蛋白含量检测——液相色谱-质谱法", source: "全国标准信息公共服务平台", category: "材料表征", status: "active", effective: "2022-08-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2022-01-13发布，2022-08-01实施。适用于组织提取纯化的胶原蛋白及胶原类产品中特征多肽含量的测定；应结合原料来源和胶原类型确认方法适用性。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailedCNF?id=D7B878FFCC515209E05397BE0A0AEE30" }),
+  item({ id: "collagen-38482", code: "GB/T 38482-2021", title: "动物源性I型胶原蛋白成分测定 聚丙烯酰胺凝胶电泳法", source: "全国标准信息公共服务平台", category: "材料表征", status: "active", effective: "2022-07-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2021-12-31发布，2022-07-01实施。用于动物源性I型胶原蛋白成分测定；这是检测方法标准，不等同于医用原料放行或植入剂完整质量要求。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=D4BEFFF4EA80B241E05397BE0A0AF581" }),
+  item({ id: "collagen-1849", code: "YY/T 1849-2022", title: "重组胶原蛋白", source: "全国标准信息公共服务平台", category: "材料与产品标准", status: "active", effective: "2022-08-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2022-01-13发布，2022-08-01实施。适用于医疗器械原材料重组胶原蛋白的质量控制；与组织提取胶原蛋白区分适用。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailedCNF?id=D7B878FFCC525209E05397BE0A0AEE30" }),
+  item({ id: "collagen-1985", code: "YY/T 1985-2025", title: "组织工程医疗器械 胶原蛋白", source: "全国标准信息公共服务平台", category: "材料与产品标准", status: "active", effective: "2026-10-01", updated: COLLAGEN_CHECKED, note: "2025-09-15发布，2026-10-01实施；本次核验日已到实施日期，按正式实施日期纳入现行（平台缓存页仍显示即将实施）。适用于组织工程医疗器械用组织提取胶原蛋白的表征和质量评价，包括工艺控制、检测和生物学评价。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailedCNF?id=41516D3BB2221C3AE06397BE0A0A3FB7" }),
+  item({ id: "collagen-1955", code: "YY/T 1955-2025", title: "组织工程医疗器械 胶原蛋白 术语", source: "全国标准信息公共服务平台", category: "材料与产品标准", status: "active", effective: "2026-03-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2025-02-26发布，2026-03-01实施。适用于组织工程支架及医疗器械用胶原蛋白术语，包括组织提取及基因重组胶原蛋白；不适用于无三螺旋结构的基因重组胶原蛋白。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=30D0B980B69C8B40E06397BE0A0A39BF" }),
+  item({ id: "collagen-1954", code: "YY/T 1954-2025", title: "重组胶原蛋白肽图指纹图谱分析", source: "全国标准信息公共服务平台", category: "材料表征", status: "active", effective: "2026-03-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2025-02-26发布，2026-03-01实施。适用于重组胶原蛋白肽图指纹图谱分析，包括肽图、肽段覆盖率和异质性分析。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=30D0B980B69B8B40E06397BE0A0A39BF" }),
+  item({ id: "collagen-1947", code: "YY/T 1947-2025", title: "重组胶原蛋白敷料", source: "全国标准信息公共服务平台", category: "材料与产品标准", status: "active", effective: "2026-03-01", updated: COLLAGEN_CHECKED, note: "官方平台列为现行；2025-02-26发布，2026-03-01实施。适用于非慢性创面使用的重组胶原蛋白敷料，不适用于含抗菌、药物成分的该类敷料，也不是注射型植入剂标准。", href: "https://std.samr.gov.cn/hb/search/stdHBDetailedCNF?id=30D0B980B69A8B40E06397BE0A0A39BF" }),
+  item({ id: "collagen-classification-2021", code: "2021年第27号通告", title: "重组胶原蛋白类医疗产品分类界定原则", source: "国家药品监督管理局", category: "法规·分类命名", status: "active", effective: "—", updated: COLLAGEN_CHECKED, note: "2021-04-13签发，2021-04-15公开发布；中检院分类界定法规目录仍收录，未检出正式替代或废止文件。用于重组胶原蛋白类医疗产品的管理属性和类别判定；未单列实施日期，不用签发日期冒充实施日期。", href: "https://www.nmpa.gov.cn/ylqx/ylqxggtg/20210415160940113.html" }),
   // 中国法规、规章与注册监管
   item({ id: "cn-regulation", code: "国务院令第739号", title: "医疗器械监督管理条例", source: "国家药品监督管理局", category: "法规·监管基础", status: "active", effective: "2021-06-01", note: "医疗器械全生命周期监管的基础性法规。", href: "https://www.nmpa.gov.cn/xxgk/fgwj/flxzhfg/20250416172904188.html?m=&type=pc" }),
   item({ id: "cn-registration", code: "市场监管总局令第47号", title: "医疗器械注册与备案管理办法", source: "国家药品监督管理局", category: "法规·注册管理", status: "active", effective: "2021-10-01", note: "注册、备案、变更、延续和注销等事项的基础规章。", href: NMPA_RULES }),
@@ -291,7 +307,7 @@ export const regulations: Regulation[] = [
   item({ id: "sterile-19973-1", code: "GB/T 19973.1-2023", title: "医疗器械的灭菌 微生物学方法 第1部分：产品上微生物总数的确定", source: SAMR, category: "灭菌", status: "review", effective: "2024-10-01", note: "产品初始污染菌或微生物总数测定条件适用。", href: STD("GB/T 19973.1-2023") }),
   item({ id: "sterile-19973-2-new", code: "GB/T 19973.2-2025", title: "医疗产品灭菌 微生物学方法 第2部分：用于灭菌过程的定义、确认和维护的无菌试验", source: SAMR, category: "灭菌", status: "active", effective: "2026-02-01", note: "国家标准全文公开系统标示为现行。", href: STD("GB/T 19973.2-2025") }),
   item({ id: "sterile-19973-2", code: "GB/T 19973.2-2018", title: "医疗器械的灭菌 微生物学方法 第2部分：用于灭菌过程的定义、确认和维护的无菌试验", source: SAMR, category: "灭菌", status: "replaced", effective: "2019-04-01", note: "已由GB/T 19973.2-2025替代。", href: STD("GB/T 19973.2-2018") }),
-  item({ id: "sterile-18279-2", code: "GB/T 18279.2-2015", title: "医疗保健产品灭菌 环氧乙烷 第2部分：灭菌过程应用指南", source: SAMR, category: "灭菌", status: "active", effective: "2017-07-01", note: "国家标准全文公开平台标示为现行；2015-12-10发布，2017-07-01实施。新版GB 18279-2023将于2026-10-01实施，届时替代相关旧版环氧乙烷灭菌要求。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=X%2BXzL%2BtVROA%3D&mode=p" }),
+  item({ id: "sterile-18279-2", code: "GB/T 18279.2-2015", title: "医疗保健产品的灭菌 环氧乙烷 第2部分：GB 18279.1应用指南", source: SAMR, category: "灭菌", status: "replaced", effective: "2017-07-01", updated: MAINTENANCE_CHECKED, note: "官方平台已列为废止；2026-10-01由GB 18279-2023全部替代，不在公开清单或主库导出中展示，仅用于识别旧清单的版本替代。", href: "https://std.samr.gov.cn/search/stdPage?q=18279" }),
   item({ id: "sterile-18280-1", code: "GB 18280.1-2015", title: "医疗保健产品灭菌 辐射 第1部分：灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时适用；GB 18280.1-2025将于2029-01-01实施并全部替代本版。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=44F3E6F82041B68DE06397BE0A0A3836" }),
   item({ id: "sterile-18280-1-new", code: "GB 18280.1-2025", title: "医疗产品灭菌 辐射 第1部分：医疗器械灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "upcoming", effective: "2029-01-01", note: "已发布，2029-01-01实施，全部替代GB 18280.1-2015；仅在采用辐射灭菌时适用。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=44F3E6F82041B68DE06397BE0A0A3836" }),
   item({ id: "sterile-18280-2", code: "GB 18280.2-2015", title: "医疗保健产品灭菌 辐射 第2部分：建立灭菌剂量", source: SAMR, category: "灭菌", status: "review", effective: "2017-07-01", note: "采用辐射灭菌时适用；GB/T 18280.2-2025将于2027-07-01实施并全部替代本版。", href: "https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D80DFAD3A7E05397BE0A0AB82A" }),
@@ -524,7 +540,7 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-066", code: "2017年第187号", title: "总局关于发布医疗器械注册单元划分指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-067", code: "2017年第145号", title: "国家食品药品监督管理总局 国家卫生和计划生育委员会关于发布医疗器械临床试验机构条件和备案管理办法的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-068", code: "食药监办械管〔2017〕161号", title: "总局办公厅关于做好医疗器械临床试验机构备案工作的通知 食药监办械管〔2017〕161号", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
-  item({ id: "imported-compare-069", code: "2017年第224号", title: "总局关于发布动物源性医疗器械注册技术审查指导原则（2017年修订版）的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
+  item({ id: "imported-compare-069", code: "2017年第224号", title: "动物源性医疗器械注册技术审查指导原则（2017年修订版）", source: "国家药监局、湖北省药监局官方转载", category: "法规·专项指导原则", status: "active", effective: "—", updated: COLLAGEN_CHECKED, note: "2017-12-25签发；官方转载可追溯，器审中心后续技术审评报告仍引用本版，未检出正式替代或废止文件。用于含动物源性组织或衍生物器械的来源控制、生物安全性及注册资料评价；未单列实施日期，不将转载日作为实施日。", href: "https://mpa.hubei.gov.cn/bmdt/zjdt/201910/t20191031_175694.shtml" }),
   item({ id: "imported-compare-070", code: "2018年第6号", title: "总局关于发布医疗器械临床试验设计指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-071", code: "2018年第13号", title: "总局关于发布接受医疗器械境外临床试验数据技术指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-072", code: "食药监科〔2018〕9号", title: "总局关于印发《医疗器械标准规划（2018—2020年）》的通知 食药监科〔2018〕9号", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
@@ -579,7 +595,7 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-123", code: "2021年第36号", title: "国家药监局关于医疗器械主文档登记事项的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-124", code: "2021年第2号", title: "关于办理医疗器械主文档登记有关事宜的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   // 从四份法规版本比对结果恢复：CFDA法律法规（待核对）
-  item({ id: "imported-compare-125", code: "2021年第21号", title: "国家药监局关于发布重组胶原蛋白生物材料命名指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
+  item({ id: "imported-compare-125", code: "2021年第21号", title: "重组胶原蛋白生物材料命名指导原则", source: "国家药监局、北京市政府官方转载", category: "法规·分类命名", status: "active", effective: "—", updated: COLLAGEN_CHECKED, note: "2021-03-15发布，北京市政府政策库标注现行有效。用于医疗器械领域重组胶原蛋白生物材料命名，不包括动物组织提取胶原蛋白；指导原则不作为法规强制执行，未单列实施日期。原始发布页：https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxqtggtg/20210315175109170.html。", href: "https://www.beijing.gov.cn/zhengce/zhengcefagui/qtwj/202204/t20220408_2669410.html" }),
   item({ id: "imported-compare-126", code: "2021年第39号", title: "国家药监局关于发布医疗器械行业标准《口腔胶原膜通用技术要求》的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-127", code: "2021年第5号", title: "关于2021年5月～6月医疗器械注册受理前技术问题咨询工作安排的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-128", code: "2021年第60号", title: "国家药监局关于发布医疗器械分类目录动态调整工作程序的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "replaced", effective: "2021-09-01", note: "已由2026年第53号公告废止并替代；报告中的分类目录动态调整程序应更新为2026年第53号公告。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxqtggtg/20260601173941178.html" }),
@@ -624,7 +640,7 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-167", code: "2023年第37号", title: "国家药监局关于废止YY/T 0708《医用电气设备 第1-4部分：安全通用要求 并列标准：可编程医用电气系统》等6项医疗器械行业标准的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-168", code: "2023年第11号", title: "关于调整医疗器械注册电子申报信息化系统业务范围的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-169", code: "2023年第10号", title: "关于2023年5月～6月医疗器械注册受理前技术问题咨询工作安排的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
-  item({ id: "imported-compare-170", code: "2023年第16号", title: "国家药监局器审中心关于发布重组胶原蛋白创面敷料等2项医疗器械产品注册审查指导原则的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
+  item({ id: "imported-compare-170", code: "2023年第16号", title: "重组胶原蛋白创面敷料注册审查指导原则、重组人源化胶原蛋白原材料评价指导原则", source: "国家药监局器审中心、长三角分中心官方转载", category: "法规·专项指导原则", status: "active", effective: "—", updated: COLLAGEN_CHECKED, note: "器审中心2023-05-22签发，官方分中心2023-05-23公开转载，包含两项正式指导原则；未检出正式替代或废止文件。创面敷料与重组人源化胶原原料评价分别按产品和原料适用，不把创面敷料要求套用于注射植入剂。按同一通告收录一条，两个附件均可在官方页面下载；未单列实施日期。", href: "https://www.ydcmdei.org.cn/article/111" }),
   item({ id: "imported-compare-171", code: "2023年第33号", title: "国家药监局关于发布免于临床评价医疗器械目录的通告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "replaced", effective: "2023-07-24", note: "已由2025年第19号通告发布的《免于进行临床评价医疗器械目录（2025年）》更新。", href: "https://www.nmpa.gov.cn/xxgk/ggtg/ylqxggtg/ylqxqtggtg/20250513095643145.html" }),
   item({ id: "imported-compare-172", code: "2023年第97号", title: "国家药监局关于发布《药品监管信息化标准体系》的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-173", code: "2023年第101号", title: "国家药监局关于调整《医疗器械分类目录》部分内容的公告", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
@@ -664,7 +680,7 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-206", code: "2025年第42号", title: "2025-12-03 国家药监局关于发布国家医疗器械监督抽检结果的通告（2025年第42号）", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-207", code: "2025年第121号", title: "2025-12-17 国家药监局关于批准注册305个医疗器械产品的公告（2025年11月）（2025年第121号）", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-208", code: "2025年第132号", title: "2026-01-04国家药监局关于调整《医疗器械分类目录》部分内容的公告（2025年第132号）", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
-  item({ id: "imported-compare-209", code: "2026年第21号", title: "国家药监局 国家卫生健康委 国家医保局关于做好后续品种实施医疗器械唯一标识工作的公告（2026年第21号）", source: "国家药品监督管理局", category: "CFDA法律法规", status: "active", effective: "2027-06-01", note: "后续品种UDI实施安排；与本报告产品是否属于已实施或后续品种，应按分类编码、产品范围和生产日期进一步核对。", href: "https://udi.nmpa.gov.cn/toDetail.html?CatalogId=2&infoId=80" }),
+  item({ id: "imported-compare-209", code: "2026年第21号", title: "国家药监局 国家卫生健康委 国家医保局关于做好后续品种实施医疗器械唯一标识工作的公告（2026年第21号）", source: "国家药品监督管理局、国家卫生健康委员会、国家医疗保障局", category: "法规·标签说明书", status: "upcoming", effective: "2027-06-01", updated: MAINTENANCE_CHECKED, note: "已正式发布；本库按后续品种的实施节点列为即将实施，不表示公告尚未发布或既有UDI要求暂停。2027-06-01起其余第二类医疗器械及第一类体外诊断试剂实施UDI，2029-06-01起全部第一类医疗器械实施；已实施的第三类及103种第二类产品继续执行现有要求。湖北、陕西药监局官方实施通知交叉确认日期，按分类编码、产品范围及生产日期判断适用批次。", href: "https://mpa.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/qtwj/202604/t20260430_5926706.shtml" }),
   item({ id: "imported-compare-210", code: "2026年第15号", title: "国家药监局关于特定情形实施医疗器械唯一标识有关事项的公告（2026年第15号）", source: "国家药品监督管理局公开信息", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.nmpa.gov.cn/ylqx/" }),
   item({ id: "imported-compare-274", code: "JJF 1101-2003", title: "环境试验设备温度、湿度校准规范", source: "国家市场监督管理总局", category: "历史版本", status: "replaced", effective: "—", note: "已由JJF 1101-2019替代，不在公开现行库展示。", href: "https://www.samr.gov.cn/cms_files/filemanager/samr/www/samrnew/samrgkml/nsjg/jls/202112/W020211229469641399704.pdf" }),
   item({ id: "imported-compare-296", code: "GHTF-SG3-N99-10:2004", title: "过程确认指南", source: "IMDRF/GHTF官方资料", category: "CFDA法律法规", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://www.imdrf.org/documents" }),
@@ -675,8 +691,8 @@ export const regulations: Regulation[] = [
   item({ id: "imported-compare-213", code: "GB 15981-1995", title: "消毒与灭菌效果的评价方法与标准", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2015981-1995&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "imported-compare-217", code: "GB/T 10247-2008", title: "粘度测量方法", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "2009-01-01", note: "国家标准全文公开系统核实为现行，2009-01-01实施。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2010247-2008&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "imported-compare-218", code: "GB 19335-2003", title: "一次性使用血路产品通用技术条件", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2019335-2003&p.p90=circulation_date&p.p91=desc" }),
-  item({ id: "imported-compare-219", code: "GB 18279.1-2015", title: "医疗保健产品灭菌 环氧乙烷 第1部分：医疗器械灭菌过程的开发、确认和常规控制的要求", source: SAMR, category: "GB", status: "active", effective: "2017-01-01", note: "国家标准全文公开平台显示现行；原GB 18279-2000/2001记录已由本标准体系替代。", href: STD("GB 18279.1-2015") }),
-  item({ id: "imported-compare-219-upcoming", code: "GB 18279-2023", title: "医疗保健产品灭菌 环氧乙烷 医疗器械灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "GB", status: "upcoming", effective: "2026-10-01", note: "国家标准全文公开平台显示即将实施；实施后替代现行GB 18279.1-2015等相关标准。", href: STD("GB 18279-2023") }),
+  item({ id: "imported-compare-219", code: "GB 18279.1-2015", title: "医疗保健产品灭菌 环氧乙烷 第1部分：医疗器械灭菌过程的开发、确认和常规控制的要求", source: SAMR, category: "灭菌", status: "replaced", effective: "2017-01-01", updated: MAINTENANCE_CHECKED, note: "官方平台已列为废止；2026-10-01由GB 18279-2023全部替代，不在公开清单或主库导出中展示，仅用于识别旧清单的版本替代。", href: "https://std.samr.gov.cn/search/stdPage?q=18279" }),
+  item({ id: "imported-compare-219-upcoming", code: "GB 18279-2023", title: "医疗保健产品灭菌 环氧乙烷 医疗器械灭菌过程的开发、确认和常规控制要求", source: SAMR, category: "灭菌", status: "active", effective: "2026-10-01", updated: MAINTENANCE_CHECKED, note: "国家标准信息公共服务平台列为现行；2026-10-01已实施，全部替代GB 18279.1-2015和GB/T 18279.2-2015。适用于环氧乙烷灭菌过程的开发、确认和常规控制。", href: "https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=0525FDF0A5EAD35CE06397BE0A0A903B" }),
   item({ id: "imported-compare-222", code: "GB 18278-2000", title: "医疗保健产品灭菌确认和常规控制要求工业湿热灭菌", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2018278-2000&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "imported-compare-223", code: "GB/T 191-2008", title: "包装储运图示标志", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%20191-2008&p.p90=circulation_date&p.p91=desc" }),
   item({ id: "imported-compare-224", code: "GB/T 20000.2-2009", title: "标准化工作指南 第2部分：采用国际标准", source: "国家标准全文公开平台", category: "GB", status: "review", effective: "待核对", note: "来自四份法规版本比对结果，已识别并纳入主库；现行状态、实施日期及适用范围需以官方来源页面为最终依据。", href: "https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=GB%2FT%2020000.2-2009&p.p90=circulation_date&p.p91=desc" }),

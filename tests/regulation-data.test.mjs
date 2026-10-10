@@ -23,7 +23,7 @@ const [{ regulations, LAST_CHECKED }, logic] = await Promise.all([
 test("公开法规只包含可发布状态并通过数据完整性校验", () => {
   const published = regulations.filter(({ status }) => status === "active" || status === "upcoming");
   assert.ok(published.length > 0);
-  assert.equal(published.length, 235, "发布基线变更时必须重新核对并更新测试基线");
+  assert.equal(published.length, 247, "发布基线变更时必须重新核对并更新测试基线");
   assert.ok(published.every(({ effective, note, href }) => /^(?:\d{4}-\d{2}(?:-\d{2})?|—)$/.test(effective) && note.trim() && /^https?:\/\//.test(href)));
   const vague = published.filter(({ note }) => /待核对|未识别|来源页面为准/.test(note));
   assert.equal(vague.length, 0, vague.map(({ code, note }) => `${code}: ${note}`).join(" | "));
@@ -31,14 +31,70 @@ test("公开法规只包含可发布状态并通过数据完整性校验", () =>
 });
 
 test("公开法规的状态日期和维护日期保持可审计", () => {
-  assert.match(LAST_CHECKED, /^2026-09-25$/);
+  assert.match(LAST_CHECKED, /^2026-10-10$/);
   const upcoming = regulations.filter(({ status }) => status === "upcoming");
   assert.ok(upcoming.every(({ effective }) => /^\d{4}-\d{2}(?:-\d{2})?$/.test(effective)), "即将实施法规必须有实施日期");
-  assert.ok(regulations.every(({ updated }) => updated === LAST_CHECKED), "所有记录必须使用同一批次的最后核对日期");
+  assert.ok(regulations.every(({ updated }) => /^\d{4}-\d{2}-\d{2}$/.test(updated)), "逐条核验日期必须可审计");
+  const supplemented = regulations.filter(({ updated }) => updated === "2026-10-10");
+  assert.equal(supplemented.length, 18, "14条胶原专项、3条环氧乙烷版本及1条UDI记录更新逐条日期");
+  assert.ok(regulations.filter(({ updated }) => updated !== "2026-10-10").every(({ updated }) => updated === "2026-09-25"), "未重新核验的记录不得冒用增量维护日期");
   const gmpGuideline = regulations.find(({ id }) => id === "cn-gmp-inspection-guideline-2026");
   assert.equal(gmpGuideline?.code, "国药监械管〔2026〕14号");
   assert.equal(gmpGuideline?.status, "upcoming");
   assert.equal(gmpGuideline?.effective, "2026-11-01");
+});
+
+test("胶原蛋白新增文件去重、范围和0954过渡关系保持正确", () => {
+  const byCode = new Map(regulations.map((record) => [logic.normalizeCode(record.code), record]));
+  const old = byCode.get(logic.normalizeCode("YY/T 0954-2015"));
+  const next = byCode.get(logic.normalizeCode("YY/T 0954-2026"));
+  assert.equal(old?.status, "active", "新版实施前旧版仍应发布为现行");
+  assert.equal(old?.effective, "2017-01-01", "使用原强制性标准发布公告日期，不按强转推后的编号倒推");
+  assert.match(old?.note ?? "", /2016-01-01.*差异/);
+  assert.equal(next?.status, "upcoming");
+  assert.equal(next?.effective, "2027-03-01");
+  assert.match(next?.note ?? "", /不直接套用于重组胶原蛋白/);
+  for (const code of ["YY/T 1805.2-2021", "YY/T 1805.3-2022", "GB/T 38482-2021", "YY/T 1849-2022", "YY/T 1985-2025", "YY/T 1955-2025", "YY/T 1954-2025", "YY/T 1947-2025", "2021年第27号通告", "2017年第224号", "2021年第21号", "2023年第16号"]) {
+    assert.equal(byCode.get(logic.normalizeCode(code))?.status, "active", code);
+    assert.equal(byCode.get(logic.normalizeCode(code))?.updated, "2026-10-10", code);
+  }
+  for (const code of ["YY/T 0954-2015", "YY0954-2015"]) {
+    const [result] = logic.compareRows([{ "标准号": code, "法规名称": "I型胶原蛋白植入剂" }], regulations);
+    assert.equal(result.result, "upcoming", "不能误报已经替代");
+    assert.equal(result.referenceCode, "YY/T 0954-2026");
+    assert.match(result.note, /将由/);
+  }
+  for (const code of ["YY/T 1453-2016", "YY/T 1888-2023", "YY/T 1511-2017"]) {
+    assert.equal(regulations.filter((record) => logic.normalizeCode(record.code) === logic.normalizeCode(code) && record.status === "active").length, 1, "已有相关标准不重复增加");
+  }
+});
+
+test("发布时不能残留已到实施日期的即将实施记录", () => {
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(new Date());
+  const stale = regulations.filter(({ status, effective }) => status === "upcoming" && /^\d{4}-\d{2}-\d{2}$/.test(effective) && effective <= today);
+  assert.deepEqual(stale.map(({ code, effective }) => `${code}（${effective}）`), [], "实施日已到：发布前必须重新核验现行状态及旧版替代关系");
+  const premature = regulations.filter(({ status, effective }) => status === "active" && /^\d{4}-\d{2}-\d{2}$/.test(effective) && effective > today);
+  assert.deepEqual(premature.map(({ code, effective }) => `${code}（${effective}）`), [], "未来实施节点不能误标为已经实施");
+  const udi = regulations.find(({ code }) => code === "2026年第21号");
+  assert.equal(udi?.status, "upcoming");
+  assert.equal(udi?.effective, "2027-06-01");
+  assert.match(udi?.note ?? "", /2029-06-01.*继续执行/);
+});
+
+test("环氧乙烷2023版实施后网页、导出和比对只以新版为现行依据", () => {
+  const newRecord = regulations.find(({ code }) => code === "GB 18279-2023");
+  assert.equal(newRecord?.status, "active");
+  assert.equal(newRecord?.category, "灭菌");
+  assert.equal(newRecord?.effective, "2026-10-01");
+  for (const code of ["GB 18279.1-2015", "GB/T 18279.2-2015"]) {
+    assert.equal(regulations.find((record) => record.code === code)?.status, "replaced");
+    const [comparison] = logic.compareRows([{ "标准号": code, "法规名称": "环氧乙烷灭菌" }], regulations);
+    assert.equal(comparison.result, "replace");
+    assert.equal(comparison.referenceCode, "GB 18279-2023");
+    const [compactComparison] = logic.compareRows([{ "标准号": code.replace(/\s+/g, ""), "法规名称": "环氧乙烷灭菌" }], regulations);
+    assert.equal(compactComparison.result, "replace", "有无空格的原始编号都应正确识别替代");
+    assert.equal(compactComparison.referenceCode, "GB 18279-2023");
+  }
 });
 
 test("关键版本替代关系不会把旧版误标为现行", () => {
